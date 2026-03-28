@@ -37,15 +37,15 @@ class Orchestrator:
         except Exception as e:
             errors.append(StepError(step="sectors", error=str(e)))
 
-        labels_created = 0
+        labels: list[dict] = []
         try:
-            labels_created = await self._label_module.create_many(request.segment, ai_config)
+            labels = await self._label_module.create_many(request.segment, ai_config)
         except Exception as e:
             errors.append(StepError(step="labels", error=str(e)))
 
         chatbot_created = False
         try:
-            chatbot_created = await self._chatbot_module.create(ai_config, request, sectors, channel_id)
+            chatbot_created = await self._chatbot_module.create(ai_config, request, sectors, channel_id, labels)
         except Exception as e:
             errors.append(StepError(step="chatbot", error=str(e)))
 
@@ -57,7 +57,8 @@ class Orchestrator:
             status=status,
             sectors_created=len(sectors),
             sectors=[SectorResult(**s) for s in sectors],
-            labels_created=labels_created,
+            labels_created=len(labels),
+            labels=labels,
             chatbot_created=chatbot_created,
             channel_id=channel_id,
             errors=errors,
