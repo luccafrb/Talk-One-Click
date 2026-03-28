@@ -29,6 +29,11 @@ class AiConfig(BaseModel):
     welcome_message: str
 
 
+class SectorResult(BaseModel):
+    name: str
+    id: str
+
+
 class StepError(BaseModel):
     step: str
     error: str
@@ -37,6 +42,7 @@ class StepError(BaseModel):
 class OnboardingResult(BaseModel):
     status: OnboardingStatus
     sectors_created: int = 0
+    sectors: list[SectorResult] = Field(default_factory=list)
     labels_created: int = 0
     chatbot_created: bool = False
     errors: list[StepError] = Field(default_factory=list)

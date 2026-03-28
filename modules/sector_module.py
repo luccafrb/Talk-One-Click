@@ -11,13 +11,13 @@ class SectorModule:
     def __init__(self, client: TalkClient) -> None:
         self._client = client
 
-    async def create_many(self, segment: str, ai_config: AiConfig) -> int:
-        created = 0
+    async def create_many(self, segment: str, ai_config: AiConfig) -> list[dict]:
+        created: list[dict] = []
 
         for name in ai_config.sectors:
             try:
-                await self._client.post("/v1/sectors/", json={"name": name})
-                created += 1
+                response = await self._client.post("/v1/sectors/", json={"name": name})
+                created.append({"name": name, "id": str(response["id"])})
             except TalkApiError as exc:
                 logger.error("Falha ao criar setor '%s': %s", name, exc)
 
