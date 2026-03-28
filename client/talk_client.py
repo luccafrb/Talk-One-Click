@@ -23,6 +23,7 @@ class TalkClient:
 
     async def post(self, path: str, json: dict) -> dict:
         json = {**json, "organizationId": self._organization_id}
+        print("[DEBUG] payload final:", json)
         return await self._request("POST", path, json=json)
 
     async def _request(self, method: str, path: str, **kwargs) -> dict:

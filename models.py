@@ -17,6 +17,7 @@ class OnboardingRequest(BaseModel):
     approach: str
     talk_api_key: str
     organization_id: str
+    chatbot_flow: Literal["menu", "collect", "welcome_only"] | None = "collect"
 
 
 class AiConfig(BaseModel):
@@ -25,6 +26,7 @@ class AiConfig(BaseModel):
     explanation: str
     sectors: list[str]
     labels: list[str]
+    welcome_message: str
 
 
 class StepError(BaseModel):

@@ -6,7 +6,17 @@ from openai import OpenAI
 from errors import AiConfigError
 from models import AiConfig, OnboardingRequest
 
-_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
+_provider = os.environ.get("AI_PROVIDER", "openai")
+
+if _provider == "gemini":
+    _client = OpenAI(
+        api_key=os.environ.get("GEMINI_API_KEY", ""),
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+    _model = "gemini-2.0-flash"
+else:
+    _client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
+    _model = "gpt-4o"
 
 _EXAMPLES = {
     "beleza": {
@@ -45,14 +55,16 @@ class AiConfigurator:
             f"- Setores: {example['sectors']}\n"
             f"- Etiquetas: {example['labels']}\n\n"
             f"Adapte os nomes ao contexto específico do negócio '{request.business_name}'.\n\n"
+            f"IMPORTANTE: cada nome em 'sectors' e 'labels' deve ter no máximo 24 caracteres.\n\n"
             f"Responda APENAS com JSON puro, sem markdown, sem texto extra, "
             f"com exatamente estes campos:\n"
             f'{{"chatbot_name": "...", "chatbot_approach": "...", "explanation": "...", '
-            f'"sectors": ["...", "..."], "labels": ["...", "..."]}}'
+            f'"sectors": ["...", "..."], "labels": ["...", "..."], '
+            f'"welcome_message": "mensagem de boas-vindas personalizada para o negócio, máximo 200 caracteres"}}'
         )
 
         response = _client.chat.completions.create(
-            model="gpt-4o",
+            model=_model,
             max_tokens=1000,
             messages=[{"role": "user", "content": prompt}],
         )
