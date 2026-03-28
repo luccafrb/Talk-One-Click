@@ -18,6 +18,7 @@ class OnboardingRequest(BaseModel):
     talk_api_key: str
     organization_id: str
     chatbot_flow: Literal["menu", "collect", "welcome_only"] | None = "collect"
+    channel_name: str | None = None
 
 
 class AiConfig(BaseModel):
@@ -45,4 +46,5 @@ class OnboardingResult(BaseModel):
     sectors: list[SectorResult] = Field(default_factory=list)
     labels_created: int = 0
     chatbot_created: bool = False
+    channel_id: str | None = None
     errors: list[StepError] = Field(default_factory=list)

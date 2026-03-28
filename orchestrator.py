@@ -1,6 +1,7 @@
 from ai.ai_configurator import AiConfigurator
 from client.talk_client import TalkClient
 from models import OnboardingRequest, OnboardingResult, SectorResult, StepError
+from modules.channel_module import ChannelModule
 from modules.chatbot_module import ChatbotModule
 from modules.label_module import LabelModule
 from modules.sector_module import SectorModule
@@ -10,6 +11,7 @@ class Orchestrator:
     def __init__(self, talk_api_key: str, organization_id: str) -> None:
         client = TalkClient(talk_api_key, organization_id)
         self._ai_configurator = AiConfigurator()
+        self._channel_module = ChannelModule(client)
         self._sector_module = SectorModule(client)
         self._label_module = LabelModule(client)
         self._chatbot_module = ChatbotModule(client)
@@ -22,6 +24,12 @@ class Orchestrator:
         except Exception as e:
             errors.append(StepError(step="ai", error=str(e)))
             return OnboardingResult(status="error", errors=errors)
+
+        channel_id: str | None = None
+        if request.channel_name is not None:
+            channel_id = await self._channel_module.create(request.channel_name)
+            if channel_id is None:
+                errors.append(StepError(step="channel", error="Falha ao criar canal"))
 
         sectors: list[dict] = []
         try:
@@ -37,7 +45,7 @@ class Orchestrator:
 
         chatbot_created = False
         try:
-            chatbot_created = await self._chatbot_module.create(ai_config, request, sectors)
+            chatbot_created = await self._chatbot_module.create(ai_config, request, sectors, channel_id)
         except Exception as e:
             errors.append(StepError(step="chatbot", error=str(e)))
 
@@ -51,5 +59,6 @@ class Orchestrator:
             sectors=[SectorResult(**s) for s in sectors],
             labels_created=labels_created,
             chatbot_created=chatbot_created,
+            channel_id=channel_id,
             errors=errors,
         )
