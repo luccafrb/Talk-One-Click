@@ -1,0 +1,1 @@
+# Setores + templates por segmento
