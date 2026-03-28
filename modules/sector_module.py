@@ -6,23 +6,15 @@ from models import AiConfig
 
 logger = logging.getLogger(__name__)
 
-_TEMPLATES: dict[str, list[str]] = {
-    "beleza": ["Agendamentos", "Atendimento", "Financeiro"],
-    "saude": ["Consultas", "Exames", "Administrativo"],
-    "ecommerce": ["Vendas", "Suporte", "Trocas e Devoluções"],
-    "educacao": ["Matrículas", "Suporte Acadêmico", "Financeiro"],
-}
-
 
 class SectorModule:
     def __init__(self, client: TalkClient) -> None:
         self._client = client
 
     async def create_many(self, segment: str, ai_config: AiConfig) -> int:
-        names = _TEMPLATES.get(segment, [])
         created = 0
 
-        for name in names:
+        for name in ai_config.sectors:
             try:
                 await self._client.post("/v1/sectors/", json={"name": name})
                 created += 1

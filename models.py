@@ -23,6 +23,8 @@ class AiConfig(BaseModel):
     chatbot_name: str
     chatbot_approach: str
     explanation: str
+    sectors: list[str]
+    labels: list[str]
 
 
 class StepError(BaseModel):
