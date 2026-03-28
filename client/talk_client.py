@@ -11,6 +11,7 @@ _MAX_RETRIES = 3
 
 class TalkClient:
     def __init__(self, talk_api_key: str, organization_id: str) -> None:
+        self.organization_id = organization_id
         self._organization_id = organization_id
         self._headers = {
             "Authorization": f"Bearer {talk_api_key}",
@@ -21,6 +22,7 @@ class TalkClient:
         return await self._request("GET", path)
 
     async def post(self, path: str, json: dict) -> dict:
+        json = {**json, "organizationId": self._organization_id}
         return await self._request("POST", path, json=json)
 
     async def _request(self, method: str, path: str, **kwargs) -> dict:
