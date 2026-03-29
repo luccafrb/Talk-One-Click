@@ -41,7 +41,6 @@ class ChatbotModule:
         channel_id: str | None,
         labels: list[dict] | None = None,
     ) -> bool:
-        print(f"[DEBUG] channel_id recebido: {channel_id}")
         sector_map = {s["name"]: s["id"] for s in sectors}
         label_map = {l["name"]: l["id"] for l in (labels or [])}
 
@@ -60,7 +59,6 @@ class ChatbotModule:
             "final": False,
             "steps": steps,
         }
-        print(f"[DEBUG] channelIds no payload: {payload['channelIds']}")
         try:
             await self._client.post("/v1/bots/flowchart/", json=payload)
             return True
@@ -76,9 +74,11 @@ class ChatbotModule:
         sector_map: dict,
         label_map: dict,
     ) -> list[dict]:
+        # Strip internal 'id' field used for named references — not part of the API schema
+        custom_steps = [{k: v for k, v in block.items() if k != "id"} for block in custom_steps]
         ids = [_make_id() for _ in custom_steps]
 
-        # Pre-scan: assign Y lanes to branch targets of options/time_of_day steps
+        # Pre-scan: assign Y lanes to branch targets of options/time_of_day/day_of_week steps
         branch_y: dict[int, int] = {}
         for block in custom_steps:
             btype = block["type"]
@@ -93,6 +93,14 @@ class ChatbotModule:
                     target = r.get("next", -1)
                     if 0 <= target < len(custom_steps) and target not in branch_y:
                         branch_y[target] = lane * 600
+            elif btype == "day_of_week":
+                seen: set[int] = set()
+                lane = 0
+                for d in params.get("days", []):
+                    if isinstance(d, int) and 0 <= d < len(custom_steps) and d not in seen and d not in branch_y:
+                        branch_y[d] = lane * 600
+                        seen.add(d)
+                        lane += 1
 
         steps = []
 
@@ -104,7 +112,7 @@ class ChatbotModule:
             y = branch_y.get(idx, 0)
             x = idx * 400
 
-            if btype == "send_message" or btype == "collect_text":
+            if btype == "send_message":
                 step = {
                     "_t": "CreateSendMessageActionModel",
                     "id": bid,
@@ -114,6 +122,19 @@ class ChatbotModule:
                 }
                 if next_id:
                     step["nextStepId"] = next_id
+
+            elif btype == "collect_text":
+                step = {
+                    "_t": "CreateRegexStepModel",
+                    "id": bid,
+                    "text": params["message"],
+                    "sendMessage": True,
+                    "canUseLastMessage": False,
+                    "options": [
+                        {"_t": "CreateRegexOptionModel", "pattern": ".*", "stepId": next_id}
+                    ] if next_id else [],
+                    "position": {"x": x, "y": y},
+                }
 
             elif btype == "options":
                 step = {
@@ -153,16 +174,23 @@ class ChatbotModule:
 
             elif btype == "time_of_day":
                 ranges_raw = params.get("ranges", [])
+                fallback_id = _find_terminal_id(custom_steps, ids)
+                # next step after this time_of_day is the expected in-hours destination
+                tod_next_id = ids[idx + 1] if idx + 1 < len(ids) else fallback_id
                 ranges_built = [
                     {
                         "range": {"start": r["start"], "end": r["end"]},
-                        "stepId": ids[r["next"]] if r.get("next", -1) >= 0 and r["next"] < len(ids) else None,
+                        # If next is invalid or self-referencing this block, redirect to next sequential step
+                        "stepId": (
+                            tod_next_id
+                            if r.get("next", -1) < 0 or r.get("next") == idx or r["next"] >= len(ids)
+                            else ids[r["next"]]
+                        ),
                     }
                     for r in ranges_raw
                 ]
                 # For any range without a stepId, fall back to the best terminal step:
                 # the send_message just before close_chat, or close_chat itself, or last step.
-                fallback_id = _find_terminal_id(custom_steps, ids)
                 ranges_built = [
                     {**r, "stepId": r["stepId"] if r["stepId"] is not None else fallback_id}
                     for r in ranges_built
@@ -190,12 +218,20 @@ class ChatbotModule:
 
             elif btype == "day_of_week":
                 days_raw = params.get("days", [None] * 7)
+                fallback_id = _find_terminal_id(custom_steps, ids)
+                auto_next_id = ids[idx + 1] if idx + 1 < len(ids) else fallback_id
                 step = {
                     "_t": "CreateDayOfTheWeekStepModel",
                     "id": bid,
                     "timeZone": params.get("timezone", "America/Sao_Paulo"),
                     "stepsForDaysOfTheWeek": [
-                        ids[d] if isinstance(d, int) and d < len(ids) else None
+                        (
+                            auto_next_id  # self-ref guard
+                            if isinstance(d, int) and d < len(ids) and d == idx
+                            else ids[d]
+                            if isinstance(d, int) and 0 <= d < len(ids)
+                            else fallback_id
+                        )
                         for d in days_raw
                     ],
                     "position": {"x": x, "y": y},
