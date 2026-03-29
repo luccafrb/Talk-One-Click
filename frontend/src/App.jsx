@@ -596,8 +596,15 @@ function ResultScreen({ result, tempoFinal, fromChat, maturityScore, loadingMatu
 
 export default function App() {
   const [form, setForm] = useState(INITIAL_FORM)
-  const [credentials, setCredentials] = useState({ talk_api_key: '', organization_id: '' })
-  const [status, setStatus] = useState('credentials') // credentials | select | form | chat | loading | result
+
+  const _savedKey = sessionStorage.getItem('talk_api_key')
+  const _savedOrg = sessionStorage.getItem('talk_organization_id')
+  const _hasSaved = _savedKey && _savedOrg
+
+  const [credentials, setCredentials] = useState(
+    _hasSaved ? { talk_api_key: _savedKey, organization_id: _savedOrg } : { talk_api_key: '', organization_id: '' }
+  )
+  const [status, setStatus] = useState(_hasSaved ? 'select' : 'credentials') // credentials | select | form | chat | loading | result
   const [hoveredCard, setHoveredCard] = useState(null)
   const [hoveredButton, setHoveredButton] = useState(null)
   const isDesktop = useIsDesktop()
@@ -782,6 +789,8 @@ export default function App() {
 
   if (status === 'credentials') return (
     <CredentialsGate onConnect={(apiKey, orgId) => {
+      sessionStorage.setItem('talk_api_key', apiKey)
+      sessionStorage.setItem('talk_organization_id', orgId)
       setCredentials({ talk_api_key: apiKey, organization_id: orgId })
       setStatus('select')
     }} />
@@ -884,6 +893,17 @@ export default function App() {
             Talk One-Click
           </h1>
           <p style={{ fontSize: '1.1rem', color: '#ACADBD' }}>Configure sua conta Talk em segundos com inteligência artificial!</p>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem('talk_api_key')
+              sessionStorage.removeItem('talk_organization_id')
+              setCredentials({ talk_api_key: '', organization_id: '' })
+              setStatus('credentials')
+            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 12, padding: 0, textDecoration: 'underline' }}
+          >
+            Trocar conta
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ alignItems: 'stretch' }}>

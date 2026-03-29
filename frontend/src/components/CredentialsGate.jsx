@@ -3,8 +3,8 @@ import { useState } from 'react'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function CredentialsGate({ onConnect }) {
-  const [apiKey, setApiKey] = useState('')
-  const [orgId, setOrgId] = useState('')
+  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem('talk_api_key') || '')
+  const [orgId, setOrgId] = useState(() => sessionStorage.getItem('talk_organization_id') || '')
   const [showKey, setShowKey] = useState(false)
   const [validating, setValidating] = useState(false)
   const [error, setError] = useState(null)
