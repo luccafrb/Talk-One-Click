@@ -1,8 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+const CUSTOM_FIELD_TYPE_MAP = {
+  text:     'CreateTextCustomFieldDefinitionModel',
+  number:   'CreateNumberCustomFieldDefinitionModel',
+  cpf:      'CreateCPFCustomFieldDefinitionModel',
+  cnpj:     'CreateCNPJCustomFieldDefinitionModel',
+  date:     'CreateDateCustomFieldDefinitionModel',
+  currency: 'CreateCurrencyCustomFieldDefinitionModel',
+  link:     'CreateLinkCustomFieldDefinitionModel',
+  logic:    'CreateLogicCustomFieldDefinitionModel',
+}
 import DiscoveryChat from '@/components/DiscoveryChat'
 import ConfigPreview from '@/components/ConfigPreview'
 import OnboardingTimer from '@/components/OnboardingTimer'
 import DeployResult from '@/components/DeployResult'
+import CredentialsGate from '@/components/CredentialsGate'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
 
 import { Button } from '@/components/ui/button'
@@ -30,17 +44,21 @@ const INITIAL_FORM = {
   segment: '',
   goal: '',
   approach: '',
-  talk_api_key: '',
-  organization_id: '',
-  create_sectors: true,
+  create_sectors: false,
   sectors_description: '',
-  create_labels: true,
+  create_labels: false,
   label_items: [{ name: '', color: '' }],
-  create_chatbot: true,
+  create_chatbot: false,
   chatbot_description: '',
   create_channel: false,
   channel_name: '',
   member_emails: '',
+  create_quick_answers: false,
+  quick_answers_description: '',
+  create_custom_fields: false,
+  custom_field_items: [{ name: '', type: 'text' }],
+  configure_org_preferences: false,
+  close_chat_message: '',
 }
 
 function AiTag() {
@@ -387,8 +405,8 @@ function ResultScreen({ result, tempoFinal, fromChat, maturityScore, loadingMatu
       {/* Header */}
       <div className="pt-8 pb-2 space-y-3">
         <h1
-          className="bg-gradient-to-r from-[#4C70DA] via-[#7b93e8] to-[#06b6d4] bg-clip-text text-transparent"
-          style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, fontFamily: "'Inter', sans-serif" }}
+          className=""
+          style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)' }}
         >
           Talk One-Click
         </h1>
@@ -535,8 +553,8 @@ function ResultScreen({ result, tempoFinal, fromChat, maturityScore, loadingMatu
         </Card>
       )}
 
-      {/* Maturity Score — only for chat flow */}
-      {fromChat && (
+      {/* Maturity Score */}
+      {(loadingMaturity || maturityScore) && (
         <div className="result-card-4" style={{ marginTop: 8 }}>
           {loadingMaturity && !maturityScore && (
             <div style={{
@@ -578,7 +596,8 @@ function ResultScreen({ result, tempoFinal, fromChat, maturityScore, loadingMatu
 
 export default function App() {
   const [form, setForm] = useState(INITIAL_FORM)
-  const [status, setStatus] = useState('select') // select | form | chat | loading | result
+  const [credentials, setCredentials] = useState({ talk_api_key: '', organization_id: '' })
+  const [status, setStatus] = useState('credentials') // credentials | select | form | chat | loading | result
   const [hoveredCard, setHoveredCard] = useState(null)
   const [hoveredButton, setHoveredButton] = useState(null)
   const isDesktop = useIsDesktop()
@@ -621,8 +640,8 @@ export default function App() {
       segment: form.segment,
       goal: form.goal,
       approach: form.approach,
-      talk_api_key: form.talk_api_key,
-      organization_id: form.organization_id,
+      talk_api_key: credentials.talk_api_key,
+      organization_id: credentials.organization_id,
       create_sectors: form.create_sectors,
       sectors_description: form.create_sectors ? form.sectors_description || undefined : undefined,
       create_labels: form.create_labels,
@@ -633,10 +652,18 @@ export default function App() {
       create_channel: form.create_channel,
       channel_name: form.create_channel ? form.channel_name || undefined : undefined,
       member_emails: memberEmails.length > 0 ? memberEmails : undefined,
+      create_quick_answers: form.create_quick_answers,
+      quick_answers_description: form.create_quick_answers && form.quick_answers_description ? form.quick_answers_description : undefined,
+      create_custom_fields: form.create_custom_fields,
+      custom_field_items_override: form.create_custom_fields
+        ? form.custom_field_items.filter(i => i.name.trim()).map(i => ({ name: i.name.trim(), type: CUSTOM_FIELD_TYPE_MAP[i.type] || CUSTOM_FIELD_TYPE_MAP.text }))
+        : undefined,
+      configure_org_preferences: form.configure_org_preferences,
+      close_chat_message: form.configure_org_preferences && form.close_chat_message ? form.close_chat_message : undefined,
     }
 
     try {
-      const res = await fetch('http://localhost:8000/onboarding', {
+      const res = await fetch(`${API_URL}/onboarding`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -646,18 +673,16 @@ export default function App() {
       setResult(data)
       setStatus('result')
 
-      if (fromChat && chatMessages) {
-        setLoadingMaturity(true)
-        fetch('http://localhost:8000/onboarding/chat/maturity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: chatMessages, onboarding_result: data }),
-        })
-          .then(r => r.json())
-          .then(score => setMaturityScore(score))
-          .catch(() => {/* ignore silently */})
-          .finally(() => setLoadingMaturity(false))
-      }
+      setLoadingMaturity(true)
+      fetch(`${API_URL}/onboarding/chat/maturity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: chatMessages ?? [], onboarding_result: data }),
+      })
+        .then(r => r.json())
+        .then(score => setMaturityScore(score))
+        .catch(() => {/* ignore silently */})
+        .finally(() => setLoadingMaturity(false))
     } catch (err) {
       setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.')
       setStatus('form')
@@ -696,9 +721,29 @@ export default function App() {
       create_labels: data.create_labels,
       create_chatbot: data.create_chatbot,
       create_channel: data.create_channel,
+      create_quick_answers: data.create_quick_answers,
+      create_custom_fields: data.create_custom_fields,
+      configure_org_preferences: data.configure_org_preferences,
     }
     for (const [key, val] of Object.entries(boolMap)) {
       if (val != null) { patch[key] = val; filled.add(key) }
+    }
+
+    const strMap = {
+      quick_answers_description: data.quick_answers_description,
+      close_chat_message: data.close_chat_message,
+    }
+    for (const [key, val] of Object.entries(strMap)) {
+      if (val) { patch[key] = val; filled.add(key) }
+    }
+
+    if (data.custom_fields_description) {
+      const items = data.custom_fields_description.split(/,\s*/).map(s => s.trim()).filter(Boolean)
+        .map(name => ({ name, type: 'text' }))
+      if (items.length > 0) {
+        patch.custom_field_items = items
+        filled.add('custom_field_items')
+      }
     }
 
     if (data.member_emails?.length > 0) {
@@ -715,7 +760,7 @@ export default function App() {
   async function handleSurpriseConfirm() {
     setSurpriseLoading(true)
     try {
-      const res = await fetch('http://localhost:8000/onboarding/surprise', {
+      const res = await fetch(`${API_URL}/onboarding/surprise`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -734,6 +779,14 @@ export default function App() {
       setSurpriseLoading(false)
     }
   }
+
+  if (status === 'credentials') return (
+    <CredentialsGate onConnect={(apiKey, orgId) => {
+      setCredentials({ talk_api_key: apiKey, organization_id: orgId })
+      setStatus('select')
+    }} />
+  )
+
 
   if (status === 'transitioning') return <FillingAnimation />
   if (status === 'loading') return <OnboardingTimer startTime={startTime ?? Date.now()} />
@@ -825,8 +878,8 @@ export default function App() {
       <div className="w-full max-w-2xl space-y-10">
         <div className="space-y-3">
           <h1
-            className="bg-gradient-to-r from-[#4C70DA] via-[#7b93e8] to-[#06b6d4] bg-clip-text text-transparent"
-            style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, fontFamily: "'Inter', sans-serif" }}
+            className=""
+            style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)' }}
           >
             Talk One-Click
           </h1>
@@ -960,14 +1013,8 @@ export default function App() {
       <div className="space-y-3" style={{ marginBottom: 32 }}>
         <button onClick={() => setStatus('select')} style={{ color: '#FFFFFF', fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 8, display: 'block' }}>← Voltar</button>
         <h1
-          className="bg-gradient-to-r from-[#4C70DA] via-[#7b93e8] to-[#06b6d4] bg-clip-text text-transparent"
-          style={{
-            fontSize: 'clamp(2.5rem, 6vw, 4rem)',
-            fontWeight: 800,
-            letterSpacing: '-0.02em',
-            lineHeight: 1.1,
-            fontFamily: "'Inter', sans-serif",
-          }}
+          className=""
+          style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)' }}
         >
           Talk One-Click
         </h1>
@@ -1070,56 +1117,6 @@ export default function App() {
           </CardContent>
         </Card>
 
-        {/* Credenciais */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Credenciais Talk</CardTitle>
-            <CardDescription>Suas chaves de acesso à plataforma Talk</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="talk_api_key">API Key</Label>
-                <a
-                  href="https://rc-app-talk.umbler.com/profile"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ fontSize: 12, color: '#7b93e8', textDecoration: 'none' }}
-                >
-                  Perfil → Meu perfil → Tokens de Acesso ↗
-                </a>
-              </div>
-              <Input
-                id="talk_api_key"
-                type="password"
-                placeholder="Sua chave de API Talk"
-                value={form.talk_api_key}
-                onChange={(e) => setField('talk_api_key', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="organization_id">Organization ID</Label>
-                <a
-                  href="https://rc-app-talk.umbler.com/preferences/organization"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ fontSize: 12, color: '#7b93e8', textDecoration: 'none' }}
-                >
-                  Configurações → Configurações da organização ↗
-                </a>
-              </div>
-              <Input
-                id="organization_id"
-                placeholder="Ex: acgO02Im8Z46U3YA"
-                value={form.organization_id}
-                onChange={(e) => setField('organization_id', e.target.value)}
-                required
-              />
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Recursos */}
         <Card>
@@ -1251,6 +1248,127 @@ export default function App() {
                   placeholder="Ex: WhatsApp Principal"
                   value={form.channel_name}
                   onChange={(e) => setField('channel_name', e.target.value)}
+                />
+              </div>
+            )}
+
+            <CheckboxField
+              id="create_quick_answers"
+              label="Respostas Rápidas"
+              description="Atalhos de texto para o time usar nos atendimentos — saudações, horários, preços, endereço. A IA cria automaticamente para o seu segmento."
+              checked={form.create_quick_answers}
+              onChange={(e) => setField('create_quick_answers', e.target.checked)}
+            />
+            {form.create_quick_answers && (
+              <div className="space-y-1.5 pl-7">
+                <Label htmlFor="quick_answers_description">Dica para a IA <span className="text-muted-foreground font-normal">(opcional)</span>{aiFilledFields.has('quick_answers_description') && <AiTag />}</Label>
+                <Textarea
+                  id="quick_answers_description"
+                  placeholder="Ex: Quero respostas para horário de funcionamento, endereço e como agendar..."
+                  value={form.quick_answers_description}
+                  onChange={(e) => setField('quick_answers_description', e.target.value)}
+                  rows={2}
+                />
+              </div>
+            )}
+
+            <CheckboxField
+              id="create_custom_fields"
+              label="Campos Personalizados de Contato"
+              description="Campos extras no perfil do contato — CPF, plano de saúde, número do pedido, etc. A IA sugere os mais relevantes para o seu segmento."
+              checked={form.create_custom_fields}
+              onChange={(e) => setField('create_custom_fields', e.target.checked)}
+            />
+            {form.create_custom_fields && (
+              <div className="space-y-2 pl-7">
+                <Label>
+                  Campos{' '}
+                  <span className="text-muted-foreground font-normal">(opcional)</span>
+                  {aiFilledFields.has('custom_field_items') && <AiTag />}
+                </Label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {form.custom_field_items.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <Input
+                        value={item.name}
+                        placeholder={`Ex: ${['CPF', 'DataNascimento', 'PlanoSaude', 'NumeroPedido', 'Empresa'][i % 5]}`}
+                        onChange={(e) => setForm(f => ({
+                          ...f,
+                          custom_field_items: f.custom_field_items.map((v, idx) => idx === i ? { ...v, name: e.target.value } : v),
+                        }))}
+                        style={{ flex: 1 }}
+                      />
+                      <Select
+                        value={item.type}
+                        onValueChange={(type) => setForm(f => ({
+                          ...f,
+                          custom_field_items: f.custom_field_items.map((v, idx) => idx === i ? { ...v, type } : v),
+                        }))}
+                      >
+                        <SelectTrigger style={{ width: 120, flexShrink: 0 }}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Texto</SelectItem>
+                          <SelectItem value="number">Número</SelectItem>
+                          <SelectItem value="cpf">CPF</SelectItem>
+                          <SelectItem value="cnpj">CNPJ</SelectItem>
+                          <SelectItem value="date">Data</SelectItem>
+                          <SelectItem value="currency">Moeda</SelectItem>
+                          <SelectItem value="link">Link</SelectItem>
+                          <SelectItem value="logic">Sim/Não</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.custom_field_items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, custom_field_items: f.custom_field_items.filter((_, idx) => idx !== i) }))}
+                          style={{
+                            width: 36, height: 36, borderRadius: 8, border: '1px solid #2a2d32',
+                            background: '#202326', color: '#ACADBD', cursor: 'pointer',
+                            fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0, transition: 'border-color 0.2s, color 0.2s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2d32'; e.currentTarget.style.color = '#ACADBD' }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, custom_field_items: [...f.custom_field_items, { name: '', type: 'text' }] }))}
+                  style={{
+                    fontSize: 13, color: '#4C70DA', background: 'none', border: '1px dashed #4C70DA55',
+                    borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+                    transition: 'border-color 0.2s, background 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#4C70DA'; e.currentTarget.style.background = '#4C70DA0D' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#4C70DA55'; e.currentTarget.style.background = 'none' }}
+                >
+                  + Adicionar campo
+                </button>
+              </div>
+            )}
+
+            <CheckboxField
+              id="configure_org_preferences"
+              label="Mensagem de Encerramento"
+              description="Envia uma mensagem automática quando um atendimento é encerrado — ex: 'Obrigado pelo contato! 😊'. A IA cria uma mensagem personalizada se você não definir uma."
+              checked={form.configure_org_preferences}
+              onChange={(e) => setField('configure_org_preferences', e.target.checked)}
+            />
+            {form.configure_org_preferences && (
+              <div className="space-y-1.5 pl-7">
+                <Label htmlFor="close_chat_message">Mensagem de encerramento <span className="text-muted-foreground font-normal">(opcional — IA gera automaticamente)</span>{aiFilledFields.has('close_chat_message') && <AiTag />}</Label>
+                <Input
+                  id="close_chat_message"
+                  placeholder="Ex: Obrigado pelo contato! Estamos sempre à disposição. 😊"
+                  value={form.close_chat_message}
+                  onChange={(e) => setField('close_chat_message', e.target.value)}
                 />
               </div>
             )}

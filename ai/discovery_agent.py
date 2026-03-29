@@ -42,6 +42,8 @@ ESTRATÉGIA DE PERGUNTAS:
   7. Chatbot: proponha proativamente um chatbot com uma sugestão concreta baseada no negócio — ex: "Pelo que você me contou, daria pra criar um chatbot que recepciona o cliente, pergunta se é agendamento ou dúvida e já direciona pro setor certo. Faz sentido pra você?" — se aceitar, peça uma descrição curta de como deve funcionar; se recusar, registre create_chatbot: false
   8. Canal: pergunte se já tem um canal de WhatsApp configurado ou quer criar um agora — se sim, peça o nome do canal (ex: "WhatsApp Principal")
   9. Atendentes: pergunte se quer convidar membros da equipe agora — se sim, peça os e-mails separados por vírgula
+  10. Respostas Rápidas: pergunte se o time tem frases que repete muito — horários, endereço, valores, saudações. Ex: "Você ou sua equipe usam muito alguma frase específica nos atendimentos? Posso cadastrar como atalho para usar rapidamente nos chats." Se sim, registre create_quick_answers: true e um hint no quick_answers_hint.
+  11. Encerramento: proponha uma mensagem de encerramento automática ao fechar atendimentos — ex: "Quer que o sistema envie uma mensagem automática quando um atendimento for encerrado, tipo 'Obrigado pelo contato! 😊'? Se quiser, me diga o texto." Registre em close_chat_message.
 
 
 QUANDO confidence >= 80: proponha os recursos em vez de perguntar diretamente.
@@ -102,6 +104,9 @@ RESPOSTA: sempre retorne JSON puro, sem markdown, sem texto extra:
     "create_channel": boolean|null,
     "channel_name": string|null,
     "member_emails": [],
+    "create_quick_answers": boolean|null,
+    "quick_answers_hint": string|null,
+    "close_chat_message": string|null,
     "confidence": número de 0 a 100
   },
   "ready": boolean
@@ -128,6 +133,9 @@ class DiscoveryAgent:
                 "create_channel": None,
                 "channel_name": None,
                 "member_emails": [],
+                "create_quick_answers": None,
+                "quick_answers_hint": None,
+                "close_chat_message": None,
                 "confidence": 0,
             },
         }
@@ -159,7 +167,13 @@ class DiscoveryAgent:
             '"create_sectors": bool, "create_labels": bool, "create_chatbot": bool, '
             '"chatbot_description": str (descrição resumida do fluxo/abordagem do chatbot, ou null), '
             '"create_channel": bool, "channel_name": str|null, '
-            '"member_emails": [] (lista de e-mails dos atendentes, vazia se nenhum)}\n\n'
+            '"member_emails": [] (lista de e-mails dos atendentes, vazia se nenhum), '
+            '"create_quick_answers": bool (padrão true), '
+            '"quick_answers_description": str (hint de tipos de respostas rápidas mencionadas, ou null), '
+            '"create_custom_fields": bool (padrão true), '
+            '"custom_fields_description": str (campos extras mencionados, ou null), '
+            '"configure_org_preferences": bool (padrão true), '
+            '"close_chat_message": str (mensagem de encerramento personalizada — gere uma se não foi mencionada, máximo 150 caracteres)}\n\n'
             "Consolide tudo da conversa. Se um campo não foi mencionado, use valores razoáveis baseados no contexto."
         )
         response = _client.chat.completions.create(
@@ -187,6 +201,12 @@ class DiscoveryAgent:
                 "create_channel": draft.get("create_channel") or False,
                 "channel_name": draft.get("channel_name"),
                 "member_emails": draft.get("member_emails") or [],
+                "create_quick_answers": draft.get("create_quick_answers") if draft.get("create_quick_answers") is not None else True,
+                "quick_answers_description": draft.get("quick_answers_hint"),
+                "create_custom_fields": True,
+                "custom_fields_description": None,
+                "configure_org_preferences": True,
+                "close_chat_message": draft.get("close_chat_message"),
             }
 
     def _strip_markdown(self, text: str) -> str:
@@ -281,4 +301,14 @@ class DiscoveryAgent:
                     return json.loads(brace.group(0))
                 except (json.JSONDecodeError, TypeError):
                     pass
-            raise AiConfigError("Falha ao parsear score de maturidade")
+            logger.warning("generate_maturity_score: falha ao parsear JSON do modelo")
+            return {
+                "score": 50,
+                "nivel": "Em desenvolvimento",
+                "resumo": "Não foi possível gerar o diagnóstico completo neste momento.",
+                "pontos_fortes": ["Início do processo de configuração", "Uso da plataforma Talk", "Busca por organização"],
+                "oportunidades": [
+                    {"titulo": "Complete a configuração", "descricao": "Conclua a configuração inicial para desbloquear todo o potencial da plataforma.", "impacto": "Alto", "prazo": "Imediato"}
+                ],
+                "proximo_passo": "Conclua a configuração inicial da plataforma.",
+            }

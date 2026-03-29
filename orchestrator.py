@@ -3,8 +3,11 @@ from client.talk_client import TalkClient
 from models import OnboardingRequest, OnboardingResult, SectorResult, StepError
 from modules.channel_module import ChannelModule
 from modules.chatbot_module import ChatbotModule
+from modules.custom_fields_module import CustomFieldsModule
 from modules.label_module import LabelModule
 from modules.member_module import MemberModule
+from modules.org_preferences_module import OrgPreferencesModule
+from modules.quick_answers_module import QuickAnswersModule
 from modules.sector_module import SectorModule
 
 # [AI AGENT FEATURE — desabilitada temporariamente, código preservado nos módulos]
@@ -22,6 +25,9 @@ class Orchestrator:
         self._label_module = LabelModule(client)
         self._member_module = MemberModule(client)
         self._chatbot_module = ChatbotModule(client)
+        self._quick_answers_module = QuickAnswersModule(client)
+        self._custom_fields_module = CustomFieldsModule(client)
+        self._org_preferences_module = OrgPreferencesModule(client)
         # self._intent_chatbot_module = IntentChatbotModule(client)
         # self._knowledge_base_module = KnowledgeBaseModule(client)
         # self._ai_agent_module = AiAgentModule(client)
@@ -78,6 +84,31 @@ class Orchestrator:
             if not chatbot_created and not any(e.step == "chatbot" for e in errors):
                 errors.append(StepError(step="chatbot", error="Falha ao criar chatbot"))
 
+        quick_answers: list[dict] = []
+        if request.create_quick_answers:
+            try:
+                quick_answers = await self._quick_answers_module.create_many(ai_config)
+            except Exception as e:
+                errors.append(StepError(step="quick_answers", error=str(e)))
+
+        custom_fields: list[dict] = []
+        if request.create_custom_fields:
+            try:
+                if request.custom_field_items_override:
+                    ai_config.custom_fields = request.custom_field_items_override
+                custom_fields = await self._custom_fields_module.create_many(ai_config)
+            except Exception as e:
+                errors.append(StepError(step="custom_fields", error=str(e)))
+
+        org_preferences_configured = False
+        if request.configure_org_preferences:
+            close_message = request.close_chat_message or ai_config.close_chat_message
+            if close_message:
+                try:
+                    org_preferences_configured = await self._org_preferences_module.configure_close_chat_message(close_message)
+                except Exception as e:
+                    errors.append(StepError(step="org_preferences", error=str(e)))
+
         # [AI AGENT FEATURE — desabilitada temporariamente]
         # Para reativar: descomentar imports acima, instanciar módulos no __init__,
         # e descomentar o bloco abaixo.
@@ -127,6 +158,9 @@ class Orchestrator:
             channel_id=channel_id,
             members_invited=len(invited),
             members=invited,
+            quick_answers_created=len(quick_answers),
+            custom_fields_created=len(custom_fields),
+            org_preferences_configured=org_preferences_configured,
             ai_agent_created=False,
             errors=errors,
         )

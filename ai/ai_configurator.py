@@ -301,6 +301,22 @@ class AiConfigurator:
                 f"Referência para o segmento '{request.segment}': {example['labels']}\n"
             )
 
+        if request.quick_answers_description:
+            qa_instruction = (
+                f"RESPOSTAS RÁPIDAS — baseie-se na instrução do cliente:\n"
+                f"  \"{request.quick_answers_description}\"\n"
+            )
+        else:
+            qa_instruction = "Gere 5 a 8 respostas rápidas úteis para o dia a dia do atendimento.\n"
+
+        if request.custom_fields_description:
+            cf_instruction = (
+                f"CAMPOS PERSONALIZADOS — baseie-se na instrução do cliente:\n"
+                f"  \"{request.custom_fields_description}\"\n"
+            )
+        else:
+            cf_instruction = "Gere 2 a 4 campos personalizados de contato relevantes para o segmento.\n"
+
         prompt = (
             f"Você é um especialista em atendimento ao cliente.\n"
             f"Configure um chatbot para o seguinte negócio:\n\n"
@@ -318,15 +334,35 @@ class AiConfigurator:
             f"Chocolate, Salmon, Tomato, Rose, Pink, Magenta, Violet, Grape, Gray, Silver, Umblerito\n"
             f"Guia: urgente/alerta → Tomato/Salmon; positivo/concluído → Green/Aquamarine; "
             f"pendente/atenção → Gold/Amber; neutro/informativo → Blue/Skyblue; VIP/especial → Violet/Grape.\n\n"
+            f"{qa_instruction}"
+            f"Cada resposta rápida: {{\"name\": \"título curto\", \"content\": \"texto completo da resposta\"}}.\n"
+            f"Exemplos de tipos: saudação, horário de funcionamento, endereço, preço inicial, encerramento.\n\n"
+            f"{cf_instruction}"
+            f"Campos disponíveis — tipos via campo '_t':\n"
+            f"  CreateTextCustomFieldDefinitionModel → texto livre\n"
+            f"  CreateNumberCustomFieldDefinitionModel → número inteiro\n"
+            f"  CreateCPFCustomFieldDefinitionModel → CPF\n"
+            f"  CreateCNPJCustomFieldDefinitionModel → CNPJ\n"
+            f"  CreateDateCustomFieldDefinitionModel → data\n"
+            f"  CreateCurrencyCustomFieldDefinitionModel → valor monetário\n"
+            f"  CreateLinkCustomFieldDefinitionModel → URL\n"
+            f"  CreateLogicCustomFieldDefinitionModel → sim/não\n"
+            f"REGRA CRÍTICA: o campo 'name' dos campos personalizados deve ser CamelCase alfanumérico SEM espaços "
+            f"(ex: \"Cpf\", \"DataNascimento\", \"PlanoSaude\", \"NumeroPedido\").\n\n"
+            f"Gere também uma mensagem de encerramento automática ('close_chat_message') personalizada para o negócio, "
+            f"máximo 200 caracteres, tom da abordagem escolhida.\n\n"
             f"Responda APENAS com JSON puro, sem markdown, sem texto extra, "
             f"com exatamente estes campos:\n"
             f'{{"chatbot_name": "...", "chatbot_approach": "...", "explanation": "...", '
             f'"sectors": ["...", "..."], "labels": ["...", "..."], '
             f'"label_colors": ["Blue", "Green", "..."], '
-            f'"welcome_message": "mensagem de boas-vindas personalizada para o negócio, máximo 200 caracteres"}}'
+            f'"welcome_message": "mensagem de boas-vindas, máximo 200 caracteres", '
+            f'"quick_answers": [{{"name": "...", "content": "..."}}], '
+            f'"custom_fields": [{{"name": "CamelCase", "type": "CreateTextCustomFieldDefinitionModel"}}], '
+            f'"close_chat_message": "mensagem de encerramento, máximo 200 caracteres"}}'
         )
 
-        return await self._call_and_parse(prompt)
+        return await self._call_and_parse(prompt, max_tokens=1800)
 
     async def _generate_custom_flow(self, request: OnboardingRequest) -> AiConfig:
         example = _EXAMPLES.get(request.segment, {"sectors": [], "labels": []})
@@ -354,6 +390,22 @@ class AiConfigurator:
                 f"Gere entre 4 e 6 etiquetas personalizadas.\n"
                 f"Referência para o segmento: {example['labels']}\n"
             )
+
+        if request.quick_answers_description:
+            qa_instruction = (
+                f"RESPOSTAS RÁPIDAS — baseie-se na instrução do cliente:\n"
+                f"  \"{request.quick_answers_description}\"\n"
+            )
+        else:
+            qa_instruction = "Gere 5 a 8 respostas rápidas úteis para o dia a dia do atendimento.\n"
+
+        if request.custom_fields_description:
+            cf_instruction = (
+                f"CAMPOS PERSONALIZADOS — baseie-se na instrução do cliente:\n"
+                f"  \"{request.custom_fields_description}\"\n"
+            )
+        else:
+            cf_instruction = "Gere 2 a 4 campos personalizados de contato relevantes para o segmento.\n"
 
         prompt = (
             f"Você é um especialista em atendimento ao cliente.\n"
@@ -415,16 +467,36 @@ class AiConfigurator:
             f"Chocolate, Salmon, Tomato, Rose, Pink, Magenta, Violet, Grape, Gray, Silver, Umblerito\n"
             f"Guia: urgente/alerta → Tomato/Salmon; positivo/concluído → Green/Aquamarine; "
             f"pendente/atenção → Gold/Amber; neutro/informativo → Blue/Skyblue; VIP/especial → Violet/Grape.\n\n"
+            f"{qa_instruction}"
+            f"Cada resposta rápida: {{\"name\": \"título curto\", \"content\": \"texto completo da resposta\"}}.\n"
+            f"Exemplos de tipos: saudação, horário de funcionamento, endereço, preço inicial, encerramento.\n\n"
+            f"{cf_instruction}"
+            f"Campos disponíveis — tipos via campo '_t':\n"
+            f"  CreateTextCustomFieldDefinitionModel → texto livre\n"
+            f"  CreateNumberCustomFieldDefinitionModel → número inteiro\n"
+            f"  CreateCPFCustomFieldDefinitionModel → CPF\n"
+            f"  CreateCNPJCustomFieldDefinitionModel → CNPJ\n"
+            f"  CreateDateCustomFieldDefinitionModel → data\n"
+            f"  CreateCurrencyCustomFieldDefinitionModel → valor monetário\n"
+            f"  CreateLinkCustomFieldDefinitionModel → URL\n"
+            f"  CreateLogicCustomFieldDefinitionModel → sim/não\n"
+            f"REGRA CRÍTICA: o campo 'name' dos campos personalizados deve ser CamelCase alfanumérico SEM espaços "
+            f"(ex: \"Cpf\", \"DataNascimento\", \"PlanoSaude\", \"NumeroPedido\").\n\n"
+            f"Gere também uma mensagem de encerramento automática ('close_chat_message') personalizada para o negócio, "
+            f"máximo 200 caracteres, tom da abordagem escolhida.\n\n"
             f"Responda APENAS com JSON puro, sem markdown, sem texto extra, "
             f"com exatamente estes campos:\n"
             f'{{"chatbot_name": "...", "chatbot_approach": "...", "explanation": "...", '
             f'"sectors": ["...", "..."], "labels": ["...", "..."], '
             f'"label_colors": ["Blue", "Green", "..."], '
             f'"welcome_message": "...", '
+            f'"quick_answers": [{{"name": "...", "content": "..."}}], '
+            f'"custom_fields": [{{"name": "CamelCase", "type": "CreateTextCustomFieldDefinitionModel"}}], '
+            f'"close_chat_message": "mensagem de encerramento, máximo 200 caracteres", '
             f'"custom_steps": [{{"id": "...", "type": "...", "params": {{}}}}]}}'
         )
 
-        config = await self._call_and_parse(prompt, max_tokens=2500)
+        config = await self._call_and_parse(prompt, max_tokens=3000)
 
         if config.custom_steps:
             verified = await self._verify_custom_steps(config.custom_steps, request)
@@ -601,11 +673,22 @@ class AiConfigurator:
             '"create_sectors": true, '
             '"create_labels": true, '
             '"create_chatbot": bool, '
-            '"chatbot_description": "descrição curta do fluxo ideal, ou null", '
+            '"chatbot_description": "se create_chatbot=true: fluxo passo a passo usando APENAS os blocos disponíveis: '
+            'send_message (envia texto), options (menu numerado), sector_transfer (encaminha setor), '
+            'collect_text (coleta dado), tag (aplica etiqueta), time_of_day (verifica horário), '
+            'day_of_week (verifica dia), wait (aguarda resposta), close_chat (encerra). '
+            'Formato: 1. send_message: boas-vindas → 2. options: [Op1, Op2] → 3. sector_transfer: Setor X. '
+            'Se create_chatbot=false: null", '
             '"create_channel": false, '
             '"channel_name": null, '
-            '"member_emails": []}\n\n'
-            "Seja específico e prático. Adapte setores, etiquetas e abordagem ao contexto real do negócio."
+            '"member_emails": [], '
+            '"create_quick_answers": bool, '
+            '"quick_answers_description": "descrição de 3-5 respostas rápidas úteis para o negócio, ou null se create_quick_answers for false", '
+            '"create_custom_fields": bool, '
+            '"custom_fields_description": "lista separada por vírgula de campos personalizados relevantes (ex: CPF, DataNascimento), ou null se create_custom_fields for false", '
+            '"configure_org_preferences": bool, '
+            '"close_chat_message": "mensagem de encerramento personalizada para o negócio, ou null se configure_org_preferences for false"}\n\n'
+            "Seja específico e prático. Adapte todas as configurações ao contexto real do negócio."
         )
 
         if description:
@@ -624,7 +707,7 @@ class AiConfigurator:
 
         response = _client.chat.completions.create(
             model=_model,
-            max_tokens=700,
+            max_tokens=1000,
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user_content},

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
-const API = 'http://localhost:8000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const SEGMENT_LABELS = {
   beleza: 'Beleza & Estética',
@@ -243,8 +243,8 @@ export default function DiscoveryChat({ onComplete, onBack }) {
             ← Voltar
           </button>
           <h1
-            className="bg-gradient-to-r from-[#4C70DA] via-[#7b93e8] to-[#06b6d4] bg-clip-text text-transparent"
-            style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, fontFamily: "'Inter', sans-serif", marginBottom: 6 }}
+            className=""
+            style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)', marginBottom: 6 }}
           >
             Talk One-Click
           </h1>

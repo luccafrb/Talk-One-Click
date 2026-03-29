@@ -54,6 +54,16 @@ class OnboardingRequest(BaseModel):
     # Members
     member_emails: list[str] | None = None
     label_colors_override: list[str] | None = None
+    # Quick Answers
+    create_quick_answers: bool = True
+    quick_answers_description: str | None = None
+    # Custom Fields
+    create_custom_fields: bool = True
+    custom_fields_description: str | None = None
+    custom_field_items_override: list[dict] | None = None
+    # Org Preferences
+    configure_org_preferences: bool = True
+    close_chat_message: str | None = None
     # AI agent
     create_ai_agent: bool = False
     ai_agent_type: AiAgentType | None = None
@@ -69,6 +79,9 @@ class AiConfig(BaseModel):
     label_colors: list[str] = []
     welcome_message: str
     custom_steps: list[dict] | None = None
+    quick_answers: list[dict] = Field(default_factory=list)
+    custom_fields: list[dict] = Field(default_factory=list)
+    close_chat_message: str | None = None
 
 
 class SectorResult(BaseModel):
@@ -97,6 +110,9 @@ class OnboardingResult(BaseModel):
     channel_id: str | None = None
     members_invited: int = 0
     members: list[str] = Field(default_factory=list)
+    quick_answers_created: int = 0
+    custom_fields_created: int = 0
+    org_preferences_configured: bool = False
     ai_agent_created: bool = False
     errors: list[StepError] = Field(default_factory=list)
 
@@ -126,3 +142,8 @@ class SurpriseRequest(BaseModel):
     segment: str | None = None
     business_name: str | None = None
     description: str | None = None
+
+
+class ValidateCredentialsRequest(BaseModel):
+    talk_api_key: str
+    organization_id: str
