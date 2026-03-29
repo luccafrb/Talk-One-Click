@@ -92,25 +92,25 @@ export default function MaturityScore({ score, nivel, resumo, pontos_fortes, opo
 
       {/* Seção 1 — Gauge */}
       <div className="ms-s0" style={{
-        background: '#202326', border: `1px solid ${color}33`,
-        borderRadius: 20, padding: '28px 24px',
-        textAlign: 'center',
+        background: 'var(--talk-bg-secondary)', border: `1px solid ${color}33`,
+        borderRadius: 8, padding: '24px 20px',
+        textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
-        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#ACADBD', textTransform: 'uppercase', marginBottom: 16 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', color: 'var(--talk-text-muted)', textTransform: 'uppercase', marginBottom: 16 }}>
           Índice de Maturidade de Atendimento
         </p>
         <Gauge score={score} />
         <p style={{ fontSize: 14, fontWeight: 600, color, marginBottom: 8 }}>{nivel}</p>
-        <p style={{ fontSize: 15, color: '#ACADBD', maxWidth: 400, margin: '0 auto' }}>{resumo}</p>
+        <p style={{ fontSize: 14, color: 'var(--talk-text-muted)', maxWidth: 400, margin: '0 auto' }}>{resumo}</p>
       </div>
 
       {/* Seção 2 — Tempo */}
       {tempoFinal && (
         <div className="ms-s1" style={{ display: 'flex', justifyContent: 'center' }}>
           <span style={{
-            background: '#202326', border: '1px solid #4C70DA33',
-            borderRadius: 20, padding: '6px 16px',
-            fontSize: 13, color: '#4C70DA',
+            background: 'var(--talk-bg-secondary)', border: '1px solid var(--talk-border)',
+            borderRadius: 6, padding: '6px 12px',
+            fontSize: 13, color: 'var(--talk-accent)',
           }}>
             ⚡ Conta configurada em {tempoFinal}s
           </span>
@@ -123,12 +123,12 @@ export default function MaturityScore({ score, nivel, resumo, pontos_fortes, opo
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
           {pontos_fortes.map((ponto, i) => (
             <div key={i} style={{
-              background: '#202326', border: '1px solid #22c55e33',
-              borderRadius: 12, padding: 16,
+              background: 'var(--talk-bg-secondary)', border: '1px solid #22c55e33',
+              borderRadius: 8, padding: 14,
               display: 'flex', alignItems: 'flex-start', gap: 10,
             }}>
-              <span style={{ color: '#22c55e', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>✓</span>
-              <span style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 1.4 }}>{ponto}</span>
+              <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 14, flexShrink: 0 }}>✓</span>
+              <span style={{ fontSize: 13, color: 'var(--talk-text-primary)', lineHeight: 1.4 }}>{ponto}</span>
             </div>
           ))}
         </div>
@@ -142,22 +142,22 @@ export default function MaturityScore({ score, nivel, resumo, pontos_fortes, opo
             const impactColor = IMPACT_COLORS[op.impacto] ?? '#4C70DA'
             return (
               <div key={i} style={{
-                background: '#202326',
+                background: 'var(--talk-bg-secondary)',
                 borderLeft: `3px solid ${impactColor}`,
-                borderRadius: 12, padding: 16,
+                borderRadius: 8, padding: 14,
               }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF', marginBottom: 6 }}>{op.titulo}</p>
-                <p style={{ fontSize: 13, color: '#ACADBD', marginBottom: 10, lineHeight: 1.4 }}>{op.descricao}</p>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--talk-text-primary)', marginBottom: 6 }}>{op.titulo}</p>
+                <p style={{ fontSize: 13, color: 'var(--talk-text-muted)', marginBottom: 10, lineHeight: 1.4 }}>{op.descricao}</p>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <span style={{
-                    fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+                    fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 4,
                     background: `${impactColor}18`, color: impactColor, border: `1px solid ${impactColor}33`,
                   }}>
                     Impacto {op.impacto}
                   </span>
                   <span style={{
-                    fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 999,
-                    background: '#141619', color: '#ACADBD', border: '1px solid #2a2d32',
+                    fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 4,
+                    background: 'var(--talk-bg-primary)', color: 'var(--talk-text-muted)', border: '1px solid var(--talk-border)',
                   }}>
                     ⏱ {op.prazo}
                   </span>
@@ -168,16 +168,14 @@ export default function MaturityScore({ score, nivel, resumo, pontos_fortes, opo
         </div>
       </div>
 
-      {/* Seção 5 — Próximo passo */}
       <div className="ms-s4" style={{
-        background: 'linear-gradient(135deg, rgba(76,112,218,0.12), rgba(76,112,218,0.04))',
-        border: '1px solid rgba(76,112,218,0.3)',
-        borderRadius: 16, padding: 20,
+        background: 'var(--talk-bg-hover)', border: '1px solid var(--talk-border)',
+        borderRadius: 8, padding: 16, margin: '16px 0 0 0'
       }}>
-        <p style={{ fontSize: 14, fontWeight: 600, color: '#4C70DA', marginBottom: 8 }}>
+        <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--talk-accent)', marginBottom: 6 }}>
           🎯 Seu próximo passo
         </p>
-        <p style={{ fontSize: 15, color: '#FFFFFF', lineHeight: 1.5 }}>{proximo_passo}</p>
+        <p style={{ fontSize: 14, color: 'var(--talk-text-primary)', lineHeight: 1.5 }}>{proximo_passo}</p>
       </div>
     </div>
   )
