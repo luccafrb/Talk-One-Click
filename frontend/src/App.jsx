@@ -894,12 +894,11 @@ export default function App() {
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}
           onClick={e => { if (e.target === e.currentTarget && !surpriseLoading) { setShowSurpriseModal(false); setSurpriseDesc('') } }}
         >
-          <div style={{ background: '#202326', border: '1px solid #2a2d32', borderRadius: 16, padding: 28, maxWidth: 480, width: '90%' }}>
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>✨</div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>Me conta sobre sua empresa</h2>
-              <p style={{ fontSize: 14, color: '#ACADBD', lineHeight: 1.5 }}>
-                Com isso a IA consegue montar uma configuração muito mais precisa para o seu negócio.
+          <div style={{ background: '#1A1C20', border: '1px solid #2A2D32', borderRadius: 8, padding: 24, maxWidth: 460, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#FFFFFF', marginBottom: 6 }}>Me conta sobre sua empresa</h2>
+              <p style={{ fontSize: 13, color: '#8E92A4', lineHeight: 1.5, margin: 0 }}>
+                Com isso a IA consegue montar uma configuração muito mais precisa para o seu negócio instantaneamente.
               </p>
             </div>
 
@@ -907,21 +906,21 @@ export default function App() {
               <textarea
                 value={surpriseDesc}
                 onChange={e => setSurpriseDesc(e.target.value.slice(0, 500))}
-                placeholder="Ex: Somos uma clínica odontológica com 3 dentistas, atendemos convênio e particular. Recebemos muitos pedidos de agendamento pelo WhatsApp e queremos organizar melhor o fluxo de atendimento..."
+                placeholder="Ex: Somos uma clínica odontológica com 3 dentistas..."
                 rows={4}
                 maxLength={500}
                 disabled={surpriseLoading}
+                className="focus-visible:ring-1"
                 style={{
                   width: '100%', boxSizing: 'border-box',
-                  background: '#141619', border: '1px solid #2a2d32', borderRadius: 8,
-                  padding: '10px 14px', color: '#FFFFFF', fontSize: 14, lineHeight: 1.5,
+                  background: '#141619', border: '1px solid #2A2D32', borderRadius: 6,
+                  padding: '12px 14px', color: '#FFFFFF', fontSize: 13, lineHeight: 1.5,
                   resize: 'none', outline: 'none', fontFamily: 'inherit',
                   opacity: surpriseLoading ? 0.6 : 1,
+                  transition: 'border-color 0.1s'
                 }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#4C70DA' }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#2a2d32' }}
               />
-              <span style={{ position: 'absolute', bottom: 8, right: 10, fontSize: 11, color: '#ACADBD', pointerEvents: 'none' }}>
+              <span style={{ position: 'absolute', bottom: 8, right: 10, fontSize: 11, color: '#8E92A4', pointerEvents: 'none' }}>
                 {surpriseDesc.length}/500
               </span>
             </div>
@@ -931,8 +930,8 @@ export default function App() {
                 onClick={() => { setShowSurpriseModal(false); setSurpriseDesc('') }}
                 disabled={surpriseLoading}
                 style={{
-                  flex: 1, padding: '11px', borderRadius: 10, fontWeight: 600, fontSize: 14,
-                  background: 'transparent', color: '#FFFFFF', border: '1px solid #2a2d32', cursor: 'pointer',
+                  flex: 1, padding: '10px', borderRadius: 6, fontWeight: 500, fontSize: 13,
+                  background: 'transparent', color: '#FFFFFF', border: '1px solid #2A2D32', cursor: 'pointer',
                   opacity: surpriseLoading ? 0.5 : 1,
                 }}
               >
@@ -942,9 +941,9 @@ export default function App() {
                 onClick={handleSurpriseConfirm}
                 disabled={!surpriseDesc.trim() || surpriseLoading}
                 style={{
-                  flex: 1, padding: '11px', borderRadius: 10, fontWeight: 600, fontSize: 14,
-                  background: !surpriseDesc.trim() || surpriseLoading ? '#2a3a6a' : '#4C70DA',
-                  color: '#FFFFFF', border: 'none', cursor: !surpriseDesc.trim() || surpriseLoading ? 'not-allowed' : 'pointer',
+                  flex: 1, padding: '10px', borderRadius: 6, fontWeight: 500, fontSize: 13,
+                  background: (!surpriseDesc.trim() || surpriseLoading) ? '#2F3238' : '#4C70DA',
+                  color: (!surpriseDesc.trim() || surpriseLoading) ? '#8E92A4' : '#FFFFFF', border: 'none', cursor: (!surpriseDesc.trim() || surpriseLoading) ? 'not-allowed' : 'pointer',
                   transition: 'background 0.2s',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
@@ -954,153 +953,109 @@ export default function App() {
                     <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid #FFFFFF88', borderTopColor: '#FFFFFF', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
                     Gerando...
                   </>
-                ) : 'Gerar configuração ✨'}
+                ) : 'Gerar configuração'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-    <div className="min-h-svh flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-2xl space-y-10">
-        <div className="space-y-3">
-          <h1
-            className=""
-            style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)' }}
-          >
-            Talk One-Click
-          </h1>
-          <p style={{ fontSize: '1.1rem', color: '#ACADBD' }}>Configure sua conta Talk em segundos com inteligência artificial!</p>
-          <button
-            onClick={() => {
-              sessionStorage.removeItem('talk_api_key')
-              sessionStorage.removeItem('talk_organization_id')
-              setCredentials({ talk_api_key: '', organization_id: '' })
-              setStatus('credentials')
-            }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 12, padding: 0, textDecoration: 'underline' }}
-          >
-            Trocar conta
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ alignItems: 'stretch' }}>
-          <div
-            style={{
-              padding: '2.6px',
-              borderRadius: '13px',
-              background: hoveredCard === 'form' ? 'linear-gradient(135deg, #4C70DA, #7b93e8, #a5b8f0)' : '#2a2d32',
-              transition: 'background 0.2s ease',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={() => setHoveredCard('form')}
-            onMouseLeave={() => setHoveredCard(null)}
-            onClick={() => setStatus('form')}
-          >
-            <div style={{ background: hoveredCard === 'form' ? '#32343A' : '#202326', borderRadius: '11px', padding: '28px 24px', height: '100%', display: 'flex', flexDirection: 'column', transition: 'background 0.2s ease' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '2rem', marginBottom: 12 }}>📋</div>
-                <h2 style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '1.05rem', marginBottom: 8 }}>
-                  Já sei o que quero
-                </h2>
-                <p style={{ color: '#ACADBD', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: 20 }}>
-                  Preencha os campos diretamente e configure sua conta em instantes.
-                </p>
-              </div>
-              <button
-                onClick={e => { e.stopPropagation(); setStatus('form') }}
-                onMouseEnter={() => setHoveredButton('form')}
-                onMouseLeave={() => setHoveredButton(null)}
-                style={{
-                  width: '100%', padding: '10px', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer',
-                  background: hoveredCard === 'form' ? '#363B4E' : '#252830',
-                  border: hoveredButton === 'form' ? '1px solid #4C70DA99' : '1px solid #2a2d32',
-                  color: '#FFFFFF',
-                  transition: 'background 0.2s ease, border-color 0.2s ease',
-                }}
-              >
-                Preencher formulário
-              </button>
-            </div>
+      <div className="min-h-svh flex flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-[640px] space-y-8">
+          <div className="space-y-2" style={{ textAlign: 'center', marginBottom: 48 }}>
+            <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>
+              Talk One-Click
+            </h1>
+            <p style={{ fontSize: 16, color: '#8E92A4', margin: 0 }}>Escolha como deseja configurar sua nova conta Talk hoje.</p>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem('talk_api_key')
+                sessionStorage.removeItem('talk_organization_id')
+                setCredentials({ talk_api_key: '', organization_id: '' })
+                setStatus('credentials')
+              }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8E92A4', fontSize: 13, padding: 0, textDecoration: 'underline', marginTop: 12, display: 'inline-block' }}
+            >
+              Trocar de conta
+            </button>
           </div>
 
-          <div
-            style={{
-              padding: '2.6px',
-              borderRadius: '13px',
-              background: hoveredCard === 'chat' ? 'linear-gradient(135deg, #4C70DA, #7b93e8, #a5b8f0)' : '#2a2d32',
-              transition: 'background 0.2s ease',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={() => setHoveredCard('chat')}
-            onMouseLeave={() => setHoveredCard(null)}
-            onClick={() => setStatus('chat')}
-          >
-            <div style={{ background: hoveredCard === 'chat' ? '#32343A' : '#202326', borderRadius: '11px', padding: '28px 24px', height: '100%', display: 'flex', flexDirection: 'column', transition: 'background 0.2s ease' }}>
+          <div className="flex flex-col gap-4">
+            {/* Card Chat */}
+            <div
+              onClick={() => setStatus('chat')}
+              onMouseEnter={() => setHoveredCard('chat')}
+              onMouseLeave={() => setHoveredCard(null)}
+              style={{
+                padding: '24px 28px', borderRadius: 10, minHeight: 120,
+                background: '#1A1C20', border: hoveredCard === 'chat' ? '1px solid #4C70DA' : '1px solid #2A2D32',
+                cursor: 'pointer', transition: 'all 0.15s ease-out',
+                display: 'flex', alignItems: 'center', gap: 24,
+                boxShadow: hoveredCard === 'chat' ? '0 4px 16px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            >
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: '2rem' }}>💬</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: '#4C70DA20', color: '#7b93e8', border: '1px solid #4C70DA40' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <h2 style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 18, margin: 0 }}>Conversar com IA</h2>
+                  <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 8px', borderRadius: 4, background: 'rgba(76,112,218,0.15)', color: '#4C70DA', border: '1px solid rgba(76,112,218,0.3)' }}>
                     Recomendado
                   </span>
                 </div>
-                <h2 style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '1.05rem', marginBottom: 8 }}>
-                  Me ajude a configurar
-                </h2>
-                <p style={{ color: '#ACADBD', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: 20 }}>
-                  Converse com nossa IA. Ela entende seu negócio e monta a configuração ideal para você.
+                <p style={{ color: '#8E92A4', fontSize: 15, lineHeight: 1.5, margin: 0 }}>
+                  A IA entende o seu negócio e toma as melhores decisões de configuração por você.
                 </p>
               </div>
-              <button
-                onClick={e => { e.stopPropagation(); setStatus('chat') }}
-                onMouseEnter={() => setHoveredButton('chat')}
-                onMouseLeave={() => setHoveredButton(null)}
-                style={{
-                  width: '100%', padding: '10px', borderRadius: 10, border: 'none', color: 'white', fontWeight: 600, fontSize: 14, cursor: 'pointer',
-                  background: hoveredButton === 'chat' ? '#5a7ee0' : '#4C70DA',
-                  transition: 'background 0.2s ease',
-                }}
-              >
-                Conversar com IA
-              </button>
+              <span style={{ fontSize: 26, opacity: hoveredCard === 'chat' ? 1 : 0.6, transition: 'opacity 0.2s' }}>💬</span>
+            </div>
+
+            {/* Card Form */}
+            <div
+              onClick={() => setStatus('form')}
+              onMouseEnter={() => setHoveredCard('form')}
+              onMouseLeave={() => setHoveredCard(null)}
+              style={{
+                padding: '24px 28px', borderRadius: 10, minHeight: 120,
+                background: '#1A1C20', border: hoveredCard === 'form' ? '1px solid #4C70DA' : '1px solid #2A2D32',
+                cursor: 'pointer', transition: 'all 0.15s ease-out',
+                display: 'flex', alignItems: 'center', gap: 24,
+                boxShadow: hoveredCard === 'form' ? '0 4px 16px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <h2 style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 18, margin: '0 0 8px 0' }}>Já sei o que quero</h2>
+                <p style={{ color: '#8E92A4', fontSize: 15, lineHeight: 1.5, margin: 0 }}>
+                  Preencha os campos diretamente em um painel manual de configuração.
+                </p>
+              </div>
+              <span style={{ fontSize: 26, filter: hoveredCard === 'form' ? 'none' : 'grayscale(1)', opacity: hoveredCard === 'form' ? 1 : 0.6, transition: 'all 0.2s' }}>📋</span>
+            </div>
+
+            {/* Surpreenda-me */}
+            <div
+              onClick={() => setShowSurpriseModal(true)}
+              onMouseEnter={() => setHoveredCard('surprise')}
+              onMouseLeave={() => setHoveredCard(null)}
+              style={{
+                padding: '24px 28px', borderRadius: 10, minHeight: 120,
+                background: hoveredCard === 'surprise' ? 'rgba(76,112,218,0.06)' : '#1A1C20',
+                border: hoveredCard === 'surprise' ? '1px solid #4C70DA' : '1px solid #2A2D32',
+                cursor: 'pointer', transition: 'all 0.15s ease-out',
+                display: 'flex', alignItems: 'center', gap: 24,
+                boxShadow: hoveredCard === 'surprise' ? '0 4px 16px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <h2 style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 18, margin: '0 0 8px 0' }}>Surpreenda-me</h2>
+                <p style={{ color: '#8E92A4', fontSize: 15, lineHeight: 1.5, margin: 0 }}>
+                  Descreva sua empresa brevemente e deixe que montemos tudo num piscar de olhos.
+                </p>
+              </div>
+              <span style={{ fontSize: 26, filter: hoveredCard === 'surprise' ? 'none' : 'grayscale(1)', opacity: hoveredCard === 'surprise' ? 1 : 0.6, transition: 'all 0.2s' }}>✨</span>
             </div>
           </div>
-        </div>
 
-        {/* Terceiro card — Surpreenda-me */}
-        <div
-          style={{
-            padding: '2.6px', borderRadius: '13px', cursor: 'pointer',
-            background: hoveredCard === 'surprise'
-              ? 'linear-gradient(135deg, #7b93e8, #4C70DA, #06b6d4)'
-              : 'linear-gradient(135deg, #4C70DA55, #06b6d455)',
-            transition: 'background 0.2s ease',
-          }}
-          onMouseEnter={() => setHoveredCard('surprise')}
-          onMouseLeave={() => setHoveredCard(null)}
-          onClick={() => setShowSurpriseModal(true)}
-        >
-          <div style={{
-            background: hoveredCard === 'surprise' ? '#32343A' : '#202326',
-            borderRadius: '11px', padding: '20px 24px',
-            display: 'flex', alignItems: 'center', gap: 16,
-            transition: 'background 0.2s ease',
-          }}>
-            <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>✨</span>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>
-                Surpreenda-me
-              </h2>
-              <p style={{ color: '#ACADBD', fontSize: '0.875rem', lineHeight: 1.4, margin: 0 }}>
-                Descreva sua empresa em uma frase e a IA monta tudo automaticamente.
-              </p>
-            </div>
-            <span style={{ color: '#4C70DA', fontSize: 20, flexShrink: 0 }}>→</span>
-          </div>
         </div>
-
       </div>
-    </div>
     </>
   )
 
@@ -1108,35 +1063,35 @@ export default function App() {
     <>
     {demoBadge}
     <style>{`@keyframes tplFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px 24px' }}>
+    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 16px 64px' }}>
 
-      {/* Cabeçalho — fora do grid, largura total */}
-      <div className="space-y-3" style={{ marginBottom: 32 }}>
-        <button onClick={() => setStatus('select')} style={{ color: '#FFFFFF', fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 8, display: 'block' }}>← Voltar</button>
+      {/* Cabeçalho do formulário */}
+      <div style={{ marginBottom: 36, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <button onClick={() => setStatus('select')} style={{ color: '#8E92A4', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>←</span> Voltar
+          </button>
+          <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.01em', color: '#FFFFFF', margin: 0 }}>
+            Configuração de nova conta
+          </h1>
+          <p style={{ fontSize: 14, color: '#8E92A4', margin: '4px 0 0' }}>
+            Preencha os dados e o sistema gerará sua conta do Talk pronta para uso.
+          </p>
+        </div>
         {importedBadge && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#4C70DA', background: '#4C70DA15', border: '1px solid #4C70DA33', borderRadius: 6, padding: '4px 10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 500, color: '#4C70DA', background: 'rgba(76,112,218,0.1)', border: '1px solid rgba(76,112,218,0.25)', borderRadius: 6, padding: '4px 10px' }}>
             🔗 Configuração importada
           </div>
         )}
-        <h1
-          className=""
-          style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)' }}
-        >
-          Talk One-Click
-        </h1>
-        <p style={{ fontSize: '1.1rem', color: '#ACADBD', fontWeight: 400 }}>
-          Configure sua conta Talk em segundos com inteligência artificial
-        </p>
       </div>
 
-      {/* Grid — cards + preview */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isDesktop ? '60% 40%' : '1fr',
+        gridTemplateColumns: isDesktop ? '1fr 360px' : '1fr',
         gap: 24,
         alignItems: 'start',
       }}>
-      <form id="onboarding-form" onSubmit={handleSubmit} className="space-y-8">
+      <form id="onboarding-form" onSubmit={handleSubmit} className="space-y-6">
         {/* Dados do negócio */}
         <Card>
           <CardHeader>
@@ -1550,15 +1505,16 @@ export default function App() {
           type="submit"
           form="onboarding-form"
           style={{
-            width: '100%', padding: '12px', borderRadius: 8,
-            background: '#4C70DA', color: 'white', fontWeight: 600,
-            fontSize: 15, border: 'none', cursor: 'pointer',
+            width: '100%', padding: '10px 16px', borderRadius: 6,
+            background: '#4C70DA', color: 'white', fontWeight: 500,
+            fontSize: 14, border: 'none', cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(76,112,218,0.25)',
           }}
         >
           Iniciar configuração
         </button>
-        <p style={{ fontSize: 11, color: '#ACADBD', textAlign: 'center', marginTop: -4 }}>
-          Seus dados não são armazenados
+        <p style={{ fontSize: 12, color: '#8E92A4', textAlign: 'center', marginTop: 8 }}>
+          ✓ Seus dados não são armazenados
         </p>
       </div>
       </div>
