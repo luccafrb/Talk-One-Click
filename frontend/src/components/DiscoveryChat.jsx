@@ -176,6 +176,7 @@ export default function DiscoveryChat({ onComplete, onBack }) {
     const newMessages = [...messages, { role: 'user', content: text }]
     setMessages(newMessages)
     setInput('')
+    inputRef.current?.focus()
     setLoading(true)
     try {
       const res = await fetch(`${API}/onboarding/chat/message`, {
@@ -189,6 +190,7 @@ export default function DiscoveryChat({ onComplete, onBack }) {
       setReady(data.ready)
     } finally {
       setLoading(false)
+      inputRef.current?.focus()
     }
   }
 

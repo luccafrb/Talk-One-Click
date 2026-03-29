@@ -218,7 +218,16 @@ class DiscoveryAgent:
         return text
 
     def _build_result(self, data: dict, fallback_draft: dict) -> dict:
-        merged_draft = {**fallback_draft, **data.get("draft", {})}
+        new_draft = data.get("draft", {})
+        merged_draft = dict(fallback_draft)
+        for key, val in new_draft.items():
+            existing = merged_draft.get(key)
+            # Don't overwrite a confirmed value with null/empty
+            if val is None and existing is not None:
+                continue
+            if isinstance(val, list) and len(val) == 0 and existing:
+                continue
+            merged_draft[key] = val
         ai_ready = data.get("ready", False)
         forced_ready = (
             merged_draft.get("confidence", 0) >= 80
