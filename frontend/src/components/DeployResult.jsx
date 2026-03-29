@@ -342,7 +342,9 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
                   >
                     Configurações → Canais
                   </a>
-                  {' '}e clique em <strong style={{ color: '#FFFFFF' }}>Sincronizar</strong>
+                  {', clique em '}
+                  <strong style={{ color: '#FFFFFF' }}>Sincronizar</strong>
+                  {' e leia o QR Code com o WhatsApp desejado'}
                 </li>
                 <li>
                   Abra o chatbot criado e adicione o canal no bloco{' '}
