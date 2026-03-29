@@ -310,8 +310,8 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
           ))}
         </div>
 
-        {/* Aviso canal ausente */}
-        {result.chatbot_created && !result.channel_id && (
+        {/* Aviso de ativação do chatbot */}
+        {result.chatbot_created && (
           <div style={{
             marginBottom: 16, opacity: 0,
             animation: `drFadeUp 0.35s ease ${errorsDelay}s both`,
@@ -325,12 +325,30 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
           }}>
             <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>⚠️</span>
             <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', margin: '0 0 4px' }}>
-                Canal necessário para o chatbot funcionar
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', margin: '0 0 6px' }}>
+                Ative o chatbot conectando um número
               </p>
-              <p style={{ fontSize: 13, color: '#ACADBD', margin: 0, lineHeight: 1.5 }}>
-                Nenhum canal foi vinculado ao chatbot. Para que ele entre em funcionamento, crie um canal de WhatsApp no Talk e conecte-o no bloco <strong style={{ color: '#FFFFFF' }}>"Iniciar por um canal"</strong> dentro do fluxo do chatbot.
+              <p style={{ fontSize: 13, color: '#ACADBD', margin: '0 0 6px', lineHeight: 1.6 }}>
+                O chatbot foi criado, mas ainda não está conectado a nenhum número. Para ativá-lo:
               </p>
+              <ol style={{ fontSize: 13, color: '#ACADBD', margin: 0, paddingLeft: 18, lineHeight: 1.8 }}>
+                <li>
+                  Acesse{' '}
+                  <a
+                    href="https://app-utalk.umbler.com/settings/channels"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: '#4C70DA', textDecoration: 'underline' }}
+                  >
+                    Configurações → Canais
+                  </a>
+                  {' '}e clique em <strong style={{ color: '#FFFFFF' }}>Sincronizar</strong>
+                </li>
+                <li>
+                  Abra o chatbot criado e adicione o canal no bloco{' '}
+                  <strong style={{ color: '#FFFFFF' }}>"Iniciar por um canal"</strong>
+                </li>
+              </ol>
             </div>
           </div>
         )}
