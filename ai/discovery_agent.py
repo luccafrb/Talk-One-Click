@@ -298,11 +298,24 @@ class DiscoveryAgent:
             "- seja específico e prático, não genérico\n\n"
             f"RESULTADO DO ONBOARDING:\n{json.dumps(onboarding_result, ensure_ascii=False, indent=2)}"
         )
-        response = _client.chat.completions.create(
-            model=_model,
-            max_tokens=1000,
-            messages=[{"role": "system", "content": system}] + messages,
-        )
+        try:
+            response = _client.chat.completions.create(
+                model=_model,
+                max_tokens=1000,
+                messages=[{"role": "system", "content": system}] + messages,
+            )
+        except Exception as exc:
+            logger.warning("generate_maturity_score: falha na chamada ao modelo: %s", exc)
+            return {
+                "score": 50,
+                "nivel": "Em desenvolvimento",
+                "resumo": "Não foi possível gerar o diagnóstico neste momento.",
+                "pontos_fortes": ["Início do processo de configuração", "Uso da plataforma Talk", "Busca por organização"],
+                "oportunidades": [
+                    {"titulo": "Complete a configuração", "descricao": "Conclua a configuração inicial para desbloquear todo o potencial da plataforma.", "impacto": "Alto", "prazo": "Imediato"}
+                ],
+                "proximo_passo": "Conclua a configuração inicial da plataforma.",
+            }
         raw = self._strip_markdown(response.choices[0].message.content.strip())
         try:
             return json.loads(raw)

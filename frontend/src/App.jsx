@@ -711,16 +711,18 @@ export default function App() {
       setResult(data)
       setStatus('result')
 
-      setLoadingMaturity(true)
-      fetch(`${API_URL}/onboarding/chat/maturity`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: chatMessages ?? [], onboarding_result: data }),
-      })
-        .then(r => r.json())
-        .then(score => setMaturityScore(score))
-        .catch(() => {/* ignore silently */})
-        .finally(() => setLoadingMaturity(false))
+      if (!isDemoMode) {
+        setLoadingMaturity(true)
+        fetch(`${API_URL}/onboarding/chat/maturity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: chatMessages ?? [], onboarding_result: data }),
+        })
+          .then(r => r.json())
+          .then(score => setMaturityScore(score))
+          .catch(() => {/* ignore silently */})
+          .finally(() => setLoadingMaturity(false))
+      }
     } catch (err) {
       setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.')
       setStatus('form')
