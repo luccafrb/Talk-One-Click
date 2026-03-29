@@ -40,6 +40,59 @@ _EXAMPLES = {
         "sectors": ["Matrículas", "Suporte Acadêmico", "Financeiro"],
         "labels": ["Interessado", "Matriculado", "Inadimplente"],
     },
+    "imobiliaria": {
+        "sectors": ["Vendas", "Locação", "Avaliação", "Pós-venda"],
+        "labels": ["Comprador", "Locatário", "Proprietário", "Visita agendada", "Proposta enviada", "Financiamento"],
+    },
+    "juridico": {
+        "sectors": ["Triagem", "Consultoria", "Contencioso", "Administrativo"],
+        "labels": ["Novo caso", "Em andamento", "Urgente", "Aguardando documentos", "Audiência marcada"],
+    },
+    "financeiro": {
+        "sectors": ["Atendimento", "Crédito", "Suporte", "Cobrança"],
+        "labels": ["Lead qualificado", "Proposta enviada", "Em análise", "Aprovado", "Inadimplente"],
+    },
+    "restaurante": {
+        "sectors": ["Pedidos", "Reservas", "Delivery", "Suporte"],
+        "labels": ["Mesa para hoje", "Delivery", "Reclamação", "Elogio", "Pedido em andamento"],
+    },
+    "logistica": {
+        "sectors": ["Cotação", "Rastreamento", "Ocorrências", "Comercial"],
+        "labels": ["Aguardando coleta", "Em trânsito", "Entregue", "Ocorrência aberta", "Reentrega"],
+    },
+    "tecnologia": {
+        "sectors": ["Suporte N1", "Suporte N2", "Comercial", "CS"],
+        "labels": ["Bug", "Dúvida", "Feature request", "Churning", "Onboarding", "Renovação"],
+    },
+    "construcao": {
+        "sectors": ["Comercial", "Projetos", "Obras", "Pós-obra"],
+        "labels": ["Orçamento", "Em execução", "Aguardando material", "Vistoria", "Garantia"],
+    },
+    "automotivo": {
+        "sectors": ["Vendas", "Serviços", "Peças", "Financiamento"],
+        "labels": ["Test drive", "Revisão", "Orçamento aprovado", "Aguardando peça", "Pronto para retirada"],
+    },
+    "eventos": {
+        "sectors": ["Comercial", "Planejamento", "Logística", "Pós-evento"],
+        "labels": ["Orçamento", "Contrato assinado", "Confirmado", "Pendência", "Feedback"],
+    },
+    "pet": {
+        "sectors": ["Agendamentos", "Veterinário", "Loja", "Emergência"],
+        "labels": ["Banho e tosa", "Consulta", "Vacina", "Internado", "Retorno"],
+    },
+    "outro": {
+        "sectors": ["Atendimento", "Comercial", "Suporte", "Financeiro"],
+        "labels": ["Novo contato", "Em andamento", "Aguardando retorno", "Resolvido"],
+    },
+}
+
+_APPROACH_DESC = {
+    "consultivo": "guia o cliente, explica e educa antes de encaminhar",
+    "direto": "objetivo e rápido, resolve sem rodeios",
+    "empatico": "acolhedor, foca no lado emocional, valida sentimentos antes de resolver",
+    "tecnico": "detalhista, foca em informações precisas e especializadas",
+    "comercial": "proativo em ofertas, foco total em converter",
+    "educativo": "ensina o cliente a usar o produto ou serviço passo a passo",
 }
 
 _CUSTOM_STEP_TYPES = (
@@ -224,14 +277,29 @@ class AiConfigurator:
     async def _generate_standard(self, request: OnboardingRequest) -> AiConfig:
         example = _EXAMPLES.get(request.segment, {"sectors": [], "labels": []})
 
-        sectors_hint = (
-            f"- Instruções específicas para setores: {request.sectors_description}\n"
-            if request.sectors_description else ""
-        )
-        labels_hint = (
-            f"- Instruções específicas para etiquetas: {request.labels_description}\n"
-            if request.labels_description else ""
-        )
+        if request.sectors_description:
+            sectors_instruction = (
+                f"SETORES — siga EXATAMENTE a instrução do cliente (quantidade e nomes):\n"
+                f"  \"{request.sectors_description}\"\n"
+                f"Não adicione nem remova setores além do que foi pedido.\n"
+            )
+        else:
+            sectors_instruction = (
+                f"Gere entre 3 e 5 setores de atendimento personalizados.\n"
+                f"Referência para o segmento '{request.segment}': {example['sectors']}\n"
+            )
+
+        if request.labels_description:
+            labels_instruction = (
+                f"ETIQUETAS — siga EXATAMENTE a instrução do cliente (quantidade e nomes):\n"
+                f"  \"{request.labels_description}\"\n"
+                f"Não adicione nem remova etiquetas além do que foi pedido.\n"
+            )
+        else:
+            labels_instruction = (
+                f"Gere entre 4 e 6 etiquetas de conversa personalizadas.\n"
+                f"Referência para o segmento '{request.segment}': {example['labels']}\n"
+            )
 
         prompt = (
             f"Você é um especialista em atendimento ao cliente.\n"
@@ -239,20 +307,22 @@ class AiConfigurator:
             f"- Nome: {request.business_name}\n"
             f"- Segmento: {request.segment}\n"
             f"- Objetivo principal: {request.goal}\n"
-            f"- Abordagem desejada: {request.approach}\n\n"
-            f"Gere setores de atendimento (entre 3 e 5) e etiquetas de conversa (entre 4 e 6) "
-            f"personalizados para este negócio.\n\n"
-            f"Exemplos de referência para o segmento '{request.segment}':\n"
-            f"- Setores: {example['sectors']}\n"
-            f"- Etiquetas: {example['labels']}\n\n"
-            f"{sectors_hint}"
-            f"{labels_hint}"
-            f"Adapte os nomes ao contexto específico do negócio '{request.business_name}'.\n\n"
+            f"- Abordagem desejada: {request.approach} — {_APPROACH_DESC.get(request.approach, '')}\n\n"
+            f"{sectors_instruction}\n"
+            f"{labels_instruction}\n"
+            f"Adapte os nomes ao contexto específico do negócio '{request.business_name}'.\n"
             f"IMPORTANTE: cada nome em 'sectors' e 'labels' deve ter no máximo 24 caracteres.\n\n"
+            f"Para cada etiqueta em 'labels', escolha uma cor semanticamente adequada em 'label_colors' "
+            f"(mesma ordem e quantidade). Cores disponíveis:\n"
+            f"Blue, Skyblue, Cyan, Aquamarine, Green, Kiwi, Gold, Amber, Tangerine, "
+            f"Chocolate, Salmon, Tomato, Rose, Pink, Magenta, Violet, Grape, Gray, Silver, Umblerito\n"
+            f"Guia: urgente/alerta → Tomato/Salmon; positivo/concluído → Green/Aquamarine; "
+            f"pendente/atenção → Gold/Amber; neutro/informativo → Blue/Skyblue; VIP/especial → Violet/Grape.\n\n"
             f"Responda APENAS com JSON puro, sem markdown, sem texto extra, "
             f"com exatamente estes campos:\n"
             f'{{"chatbot_name": "...", "chatbot_approach": "...", "explanation": "...", '
             f'"sectors": ["...", "..."], "labels": ["...", "..."], '
+            f'"label_colors": ["Blue", "Green", "..."], '
             f'"welcome_message": "mensagem de boas-vindas personalizada para o negócio, máximo 200 caracteres"}}'
         )
 
@@ -260,14 +330,30 @@ class AiConfigurator:
 
     async def _generate_custom_flow(self, request: OnboardingRequest) -> AiConfig:
         example = _EXAMPLES.get(request.segment, {"sectors": [], "labels": []})
-        sectors_hint = (
-            f"- Instruções específicas para setores: {request.sectors_description}\n"
-            if request.sectors_description else ""
-        )
-        labels_hint = (
-            f"- Instruções específicas para etiquetas: {request.labels_description}\n"
-            if request.labels_description else ""
-        )
+
+        if request.sectors_description:
+            sectors_instruction = (
+                f"SETORES — siga EXATAMENTE a instrução do cliente (quantidade e nomes):\n"
+                f"  \"{request.sectors_description}\"\n"
+                f"Não adicione nem remova setores além do que foi pedido.\n"
+            )
+        else:
+            sectors_instruction = (
+                f"Gere entre 3 e 5 setores personalizados.\n"
+                f"Referência para o segmento: {example['sectors']}\n"
+            )
+
+        if request.labels_description:
+            labels_instruction = (
+                f"ETIQUETAS — siga EXATAMENTE a instrução do cliente (quantidade e nomes):\n"
+                f"  \"{request.labels_description}\"\n"
+                f"Não adicione nem remova etiquetas além do que foi pedido.\n"
+            )
+        else:
+            labels_instruction = (
+                f"Gere entre 4 e 6 etiquetas personalizadas.\n"
+                f"Referência para o segmento: {example['labels']}\n"
+            )
 
         prompt = (
             f"Você é um especialista em atendimento ao cliente.\n"
@@ -275,13 +361,12 @@ class AiConfigurator:
             f"- Nome: {request.business_name}\n"
             f"- Segmento: {request.segment}\n"
             f"- Objetivo principal: {request.goal}\n"
-            f"- Abordagem desejada: {request.approach}\n\n"
-            f"Setores de referência para o segmento: {example['sectors']}\n"
-            f"{sectors_hint}"
-            f"{labels_hint}\n"
+            f"- Abordagem desejada: {request.approach} — {_APPROACH_DESC.get(request.approach, '')}\n\n"
+            f"{sectors_instruction}\n"
+            f"{labels_instruction}\n"
             f"Descrição do fluxo desejado pelo cliente:\n{request.chatbot_description}\n\n"
             f"INSTRUÇÕES:\n"
-            f"1. Gere setores (entre 3 e 5) e etiquetas (entre 4 e 6) personalizados.\n"
+            f"1. Use os setores e etiquetas definidos acima (respeitando instruções do cliente se fornecidas).\n"
             f"2. Monte o fluxo como uma lista de blocos em 'custom_steps' (máximo 15 blocos).\n"
             f"3. O primeiro bloco DEVE ser send_message (boas-vindas pura — sem perguntas de coleta).\n"
             f"4. O último bloco de cada branch DEVE ser sector_transfer ou close_chat.\n"
@@ -324,10 +409,17 @@ class AiConfigurator:
             f'     {{"id":"encerrar","type":"close_chat","params":{{}}}}]\n\n'
             f"Tipos de bloco disponíveis: {_CUSTOM_STEP_TYPES}\n"
             f"Parâmetros por tipo:\n{_CUSTOM_STEP_PARAMS}\n"
+            f"Para cada etiqueta em 'labels', escolha uma cor semanticamente adequada em 'label_colors' "
+            f"(mesma ordem e quantidade). Cores disponíveis:\n"
+            f"Blue, Skyblue, Cyan, Aquamarine, Green, Kiwi, Gold, Amber, Tangerine, "
+            f"Chocolate, Salmon, Tomato, Rose, Pink, Magenta, Violet, Grape, Gray, Silver, Umblerito\n"
+            f"Guia: urgente/alerta → Tomato/Salmon; positivo/concluído → Green/Aquamarine; "
+            f"pendente/atenção → Gold/Amber; neutro/informativo → Blue/Skyblue; VIP/especial → Violet/Grape.\n\n"
             f"Responda APENAS com JSON puro, sem markdown, sem texto extra, "
             f"com exatamente estes campos:\n"
             f'{{"chatbot_name": "...", "chatbot_approach": "...", "explanation": "...", '
             f'"sectors": ["...", "..."], "labels": ["...", "..."], '
+            f'"label_colors": ["Blue", "Green", "..."], '
             f'"welcome_message": "...", '
             f'"custom_steps": [{{"id": "...", "type": "...", "params": {{}}}}]}}'
         )
@@ -494,3 +586,60 @@ class AiConfigurator:
             raise AiConfigError(f"Resposta do modelo não é JSON válido: {text!r}") from exc
 
         return AiConfig(**data)
+
+    async def generate_surprise(self, segment: str, business_name: str, description: str | None = None) -> dict:
+        system = (
+            "Você é um especialista em atendimento ao cliente e configuração de plataformas de chat.\n"
+            "Com base nas informações fornecidas, gere a configuração ideal para a plataforma Talk.\n\n"
+            "Retorne APENAS JSON puro com exatamente estes campos:\n"
+            '{"business_name": str, '
+            '"segment": "beleza|saude|ecommerce|educacao|imobiliaria|juridico|financeiro|restaurante|logistica|tecnologia|construcao|automotivo|eventos|pet|outro", '
+            '"goal": str, '
+            '"approach": "consultivo|direto|empatico|tecnico|comercial|educativo", '
+            '"sectors_description": str, '
+            '"labels_description": str, '
+            '"create_sectors": true, '
+            '"create_labels": true, '
+            '"create_chatbot": bool, '
+            '"chatbot_description": "descrição curta do fluxo ideal, ou null", '
+            '"create_channel": false, '
+            '"channel_name": null, '
+            '"member_emails": []}\n\n'
+            "Seja específico e prático. Adapte setores, etiquetas e abordagem ao contexto real do negócio."
+        )
+
+        if description:
+            user_content = (
+                f"Segmento: {segment}\n"
+                f"Nome do negócio: {business_name}\n"
+                f"Descrição da empresa: {description}\n\n"
+                "Gere a configuração mais inteligente e personalizada possível para este negócio específico."
+            )
+        else:
+            user_content = (
+                f"Segmento: {segment}\n"
+                f"Nome do negócio: {business_name}\n\n"
+                "Gere a configuração mais inteligente possível para este segmento."
+            )
+
+        response = _client.chat.completions.create(
+            model=_model,
+            max_tokens=700,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_content},
+            ],
+        )
+
+        text = response.choices[0].message.content.strip()
+        if text.startswith("```"):
+            text = text.split("```", 2)[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.rsplit("```", 1)[0].strip()
+        text = re.sub(r'(")\s*\.\s*,', r'",', text)
+
+        try:
+            return json.loads(text)
+        except (json.JSONDecodeError, TypeError) as exc:
+            raise AiConfigError(f"Falha ao parsear configuração surpresa: {text!r}") from exc

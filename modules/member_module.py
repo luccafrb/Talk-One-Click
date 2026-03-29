@@ -16,14 +16,16 @@ class MemberModule:
             try:
                 await self._client.post("/v1/organization-invites/", json={
                     "email": email,
-                    "allowedChannel": {"allChannelsEnable": True, "channels": []},
-                    "allowedChannelSession": {"allChannelsSessionEnable": True, "channelsSession": []},
+                    "permissions": ["Operator"],
                     "allowedSector": {"allSectorsEnable": True, "sectors": []},
+                    "allowedChannel": {"allChannelsEnable": True, "channels": []},
+                    "allowedChannelSession": {"allChannelsSessionEnable": False, "channelsSession": []},
                     "allowedContactsBoard": {"allContactsBoardsEnable": True, "contactsBoards": []},
-                    "allowedContact": True,
+                    "allowReport": False,
+                    "allowedTemplate": False,
+                    "allowedContact": False,
                     "allowedQuickAnswer": ["Create", "Edit", "Delete"],
-                    "allowedTemplate": True,
-                    "allowReport": True,
+                    "permissionActions": [],
                 })
                 invited.append(email)
             except TalkApiError as exc:

@@ -5,7 +5,31 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-Segment = Literal["beleza", "saude", "ecommerce", "educacao"]
+Segment = Literal[
+    "beleza",
+    "saude",
+    "ecommerce",
+    "educacao",
+    "imobiliaria",
+    "juridico",
+    "financeiro",
+    "restaurante",
+    "logistica",
+    "tecnologia",
+    "construcao",
+    "automotivo",
+    "eventos",
+    "pet",
+    "outro",
+]
+Approach = Literal[
+    "consultivo",
+    "direto",
+    "empatico",
+    "tecnico",
+    "comercial",
+    "educativo",
+]
 OnboardingStatus = Literal["ok", "partial", "error"]
 AiAgentType = Literal["support", "sales", "qualification", "greeting", "sector_forwarding", "tagging"]
 
@@ -14,8 +38,7 @@ class OnboardingRequest(BaseModel):
     business_name: str
     segment: Segment
     goal: str
-    volume: str
-    approach: str
+    approach: Approach
     talk_api_key: str
     organization_id: str
     chatbot_flow: Literal["menu", "collect", "welcome_only"] | None = "collect"
@@ -30,6 +53,7 @@ class OnboardingRequest(BaseModel):
     chatbot_description: str | None = None
     # Members
     member_emails: list[str] | None = None
+    label_colors_override: list[str] | None = None
     # AI agent
     create_ai_agent: bool = False
     ai_agent_type: AiAgentType | None = None
@@ -42,6 +66,7 @@ class AiConfig(BaseModel):
     explanation: str
     sectors: list[str]
     labels: list[str]
+    label_colors: list[str] = []
     welcome_message: str
     custom_steps: list[dict] | None = None
 
@@ -58,6 +83,12 @@ class StepError(BaseModel):
 
 class OnboardingResult(BaseModel):
     status: OnboardingStatus
+    # AI summary
+    chatbot_name: str | None = None
+    chatbot_approach: str | None = None
+    ai_explanation: str | None = None
+    welcome_message: str | None = None
+    # Resources
     sectors_created: int = 0
     sectors: list[SectorResult] = Field(default_factory=list)
     labels_created: int = 0
@@ -65,5 +96,33 @@ class OnboardingResult(BaseModel):
     chatbot_created: bool = False
     channel_id: str | None = None
     members_invited: int = 0
+    members: list[str] = Field(default_factory=list)
     ai_agent_created: bool = False
     errors: list[StepError] = Field(default_factory=list)
+
+
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+
+class ChatSessionRequest(BaseModel):
+    messages: list[ChatMessage]
+    draft: dict
+
+
+class ChatSessionResponse(BaseModel):
+    message: str
+    draft: dict
+    ready: bool
+
+
+class MaturityRequest(BaseModel):
+    messages: list[ChatMessage]
+    onboarding_result: dict
+
+
+class SurpriseRequest(BaseModel):
+    segment: str | None = None
+    business_name: str | None = None
+    description: str | None = None

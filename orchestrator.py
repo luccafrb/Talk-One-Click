@@ -51,6 +51,12 @@ class Orchestrator:
         labels: list[dict] = []
         if request.create_labels:
             try:
+                if request.label_colors_override:
+                    override = request.label_colors_override
+                    ai_config.label_colors = [
+                        override[i] if i < len(override) and override[i] else (ai_config.label_colors[i] if i < len(ai_config.label_colors) else '')
+                        for i in range(len(ai_config.labels))
+                    ]
                 labels = await self._label_module.create_many(request.segment, ai_config)
             except Exception as e:
                 errors.append(StepError(step="labels", error=str(e)))
@@ -109,6 +115,10 @@ class Orchestrator:
         status = "ok" if not errors else "partial"
         return OnboardingResult(
             status=status,
+            chatbot_name=ai_config.chatbot_name,
+            chatbot_approach=ai_config.chatbot_approach,
+            ai_explanation=ai_config.explanation,
+            welcome_message=ai_config.welcome_message,
             sectors_created=len(sectors),
             sectors=[SectorResult(**s) for s in sectors],
             labels_created=len(labels),
@@ -116,6 +126,7 @@ class Orchestrator:
             chatbot_created=chatbot_created,
             channel_id=channel_id,
             members_invited=len(invited),
+            members=invited,
             ai_agent_created=False,
             errors=errors,
         )

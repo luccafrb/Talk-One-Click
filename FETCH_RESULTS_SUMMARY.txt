@@ -1,0 +1,55 @@
+
+# API Documentation Fetch Results
+
+## Summary
+Successfully fetched the Umbler UTalk API documentation from:
+https://app-utalk.umbler.com/api/docs/v1/docs.json
+
+### Key Findings:
+1. Paths with "invite" or "member": 11 endpoints found
+2. POST paths under /v1/bots/: 1 endpoint found  
+3. Schema definitions: 11 schemas extracted
+
+---
+
+## CRITICAL NOTE ON BOT CREATION
+
+The API **DOES NOT** expose separate endpoints for:
+- CreateGreetingBotModel
+- CreateTaggingBotModel  
+- CreateSectorForwardingBotModel
+
+These are RESPONSE models only. The **ONLY** bot creation endpoint is:
+- **POST /v1/bots/flowchart/** - Creates flowchart bots
+
+The greeting, tagging, and sector forwarding bots are created through the 
+flowchart bot system, not as separate endpoints.
+
+---
+
+## EXTRACTED SCHEMA DEFINITIONS
+
+See attached JSON files for complete raw JSON data.
+
+Key schemas found:
+1. SendOrganizationInviteModel - For creating organization invites
+2. MemberAllowedChannelModel - Channel permissions model
+3. MemberAllowedChannelSessionModel - Channel session permissions
+4. MemberAllowedContactsBoardModel - Contacts board permissions
+5. MemberAllowedSectorModel - Sector permissions model
+6. GreetingBotModel - Response model for greeting bots
+7. TaggingBotModel - Response model for tagging bots
+8. SectorForwardingBotModel - Response model for sector forwarding bots
+9. CreateFlowchartBotModel - For creating flowchart bots
+10. CreateBotBase - Base model for bot creation
+11. OrganizationInviteModel - Response model for invites
+
+---
+
+## GENERATED FILES
+
+1. api_summary.json - Complete structured JSON of all paths and schemas
+2. api_docs_extracted.json - Full extracted API documentation  
+3. api_docs_temp.json - Raw OpenAPI 3.0.4 specification
+
+All files contain the complete raw JSON data requested.
