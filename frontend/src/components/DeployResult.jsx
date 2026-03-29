@@ -11,9 +11,9 @@ const TAG_COLOR_HEX = {
 }
 
 const STATUS_CFG = {
-  ok:      { color: '#22c55e', icon: '✓', title: 'Deploy concluído.' },
-  partial: { color: '#f59e0b', icon: '⚠', title: 'Deploy com avisos.' },
-  error:   { color: '#ef4444', icon: '✕', title: 'Deploy falhou.' },
+  ok:      { color: '#22c55e', icon: '✓', title: 'Organização configurada.' },
+  partial: { color: '#f59e0b', icon: '⚠', title: 'Concluído com avisos.' },
+  error:   { color: '#ef4444', icon: '✕', title: 'Falha na configuração.' },
 }
 
 const BADGE_STYLES = {
@@ -25,20 +25,13 @@ const BADGE_STYLES = {
 
 function StatusCircle({ color, icon }) {
   return (
-    <div style={{ position: 'relative', width: 64, height: 64, margin: '0 auto 20px', flexShrink: 0 }}>
-      <div style={{
-        position: 'absolute', inset: 0, borderRadius: '50%',
-        border: `2px solid ${color}`,
-        animation: 'drRipple 1.8s ease-out infinite',
-      }} />
-      <div style={{
-        position: 'absolute', inset: 0, borderRadius: '50%',
-        background: `${color}1A`, border: `2px solid ${color}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 26, color: '#FFFFFF', fontWeight: 700,
-      }}>
-        {icon}
-      </div>
+    <div style={{
+      width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+      background: `${color}1A`, border: `1px solid ${color}40`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 18, color: color, fontWeight: 700,
+    }}>
+      {icon}
     </div>
   )
 }
@@ -72,7 +65,7 @@ function Badge({ label, variant }) {
   const s = BADGE_STYLES[variant] ?? BADGE_STYLES.ignorado
   return (
     <span style={{
-      fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 999,
+      fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 4,
       background: s.bg, border: `1px solid ${s.border}`, color: s.text,
       flexShrink: 0, whiteSpace: 'nowrap',
     }}>
@@ -104,8 +97,8 @@ function TimelineItem({ title, detail, badge, pills, delay, isLast, ok }) {
       <div style={{ flex: 1, paddingLeft: 14, paddingBottom: isLast ? 0 : 20 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: pills?.length > 0 ? 8 : 0 }}>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF', margin: 0, marginBottom: 2 }}>{title}</p>
-            <p style={{ fontSize: 13, color: '#ACADBD', margin: 0 }}>{detail}</p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF', margin: 0, marginBottom: 2 }}>{title}</p>
+            <p style={{ fontSize: 12, color: '#8E92A4', margin: 0 }}>{detail}</p>
           </div>
           <Badge label={badge.label} variant={badge.variant} />
         </div>
@@ -113,10 +106,10 @@ function TimelineItem({ title, detail, badge, pills, delay, isLast, ok }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {pills.map((pill, i) => (
               <span key={i} style={{
-                fontSize: 12, padding: '3px 10px', borderRadius: 6,
-                background: pill.bg ?? '#202326',
-                border: `1px solid ${pill.border ?? '#2a2d32'}`,
-                color: '#FFFFFF',
+                fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                background: pill.bg ?? '#1A1C20',
+                border: `1px solid ${pill.border ?? '#2A2D32'}`,
+                color: '#E0E2E6',
                 display: 'inline-flex', alignItems: 'center', gap: 5,
               }}>
                 {pill.dot && (
@@ -236,8 +229,8 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
     const hex = TAG_COLOR_HEX[l.color]
     return {
       label: l.name,
-      bg: hex ? hex + '1A' : '#202326',
-      border: hex ? hex + '44' : '#2a2d32',
+      bg: hex ? hex + '15' : '#1A1C20',
+      border: hex ? hex + '33' : '#2A2D32',
       dot: hex ?? null,
     }
   })
@@ -293,13 +286,9 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
   return (
     <div style={{ minHeight: '100svh', background: '#141619', display: 'flex', justifyContent: 'center', padding: '40px 24px 64px' }}>
       <style>{`
-        @keyframes drRipple {
-          0%   { transform: scale(1);   opacity: 0.5; }
-          100% { transform: scale(2.4); opacity: 0; }
-        }
         @keyframes drHeaderIn {
-          from { opacity: 0; transform: scale(0.92); }
-          to   { opacity: 1; transform: scale(1); }
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes drItemIn {
           from { opacity: 0; transform: translateX(-8px); }
@@ -329,31 +318,35 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
 
         {/* Header */}
         <div style={{
-          background: '#202326', border: `1px solid ${sc.color}33`,
-          borderRadius: 16, padding: '32px 24px', textAlign: 'center', marginBottom: 32,
-          animation: 'drHeaderIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
+          background: '#1A1C20', border: `1px solid #2A2D32`,
+          borderLeft: `4px solid ${sc.color}`,
+          borderRadius: 8, padding: '20px 24px', marginBottom: 32,
+          display: 'flex', alignItems: 'center', gap: 16,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          animation: 'drHeaderIn 0.3s ease-out both',
         }}>
           <StatusCircle color={sc.color} icon={sc.icon} />
-          <h1 style={{
-            fontSize: 26, fontWeight: 700, color: '#FFFFFF', margin: '0 0 8px',
-            fontFamily: "'Inter', sans-serif", letterSpacing: '-0.02em',
-          }}>
-            {sc.title}
-          </h1>
-          <p style={{ fontSize: 14, color: '#ACADBD', margin: 0 }}>
-            {result.status !== 'error' && tempoFinal ? (
-              <>
-                Configurado em{' '}
-                <span style={{ fontSize: 22, fontWeight: 800, color: '#4C70DA' }}>{tempoFinal}</span>
-                {' '}segundos
-                {result.status === 'partial' && errors.length > 0 && (
-                  <> · <span style={{ color: '#f59e0b' }}>{errors.length} aviso(s)</span></>
-                )}
-              </>
-            ) : (
-              'Verifique os erros abaixo'
-            )}
-          </p>
+          <div style={{ flex: 1 }}>
+            <h1 style={{
+              fontSize: 16, fontWeight: 600, color: '#FFFFFF', margin: '0 0 2px 0',
+              fontFamily: "'Inter', sans-serif", letterSpacing: '-0.01em',
+            }}>
+              {sc.title}
+            </h1>
+            <p style={{ fontSize: 13, color: '#8E92A4', margin: 0 }}>
+              {result.status !== 'error' && tempoFinal ? (
+                <>
+                  Configurado em{' '}
+                  <span style={{ fontWeight: 600, color: '#FFFFFF' }}>{tempoFinal}s</span>
+                  {result.status === 'partial' && errors.length > 0 && (
+                    <> · <span style={{ color: '#f59e0b' }}>{errors.length} aviso(s)</span></>
+                  )}
+                </>
+              ) : (
+                'Verifique os erros abaixo'
+              )}
+            </p>
+          </div>
         </div>
 
         {/* Timeline */}
@@ -440,23 +433,23 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
               target="_blank"
               rel="noreferrer"
               style={{
-                flex: 1, padding: '12px', borderRadius: 10, textAlign: 'center',
-                background: '#4C70DA', color: '#FFFFFF', fontWeight: 600, fontSize: 14,
+                flex: 1, padding: '10px', borderRadius: 6, textAlign: 'center',
+                background: '#4C70DA', color: '#FFFFFF', fontWeight: 500, fontSize: 13,
                 textDecoration: 'none', display: 'block',
               }}
             >
-              Acessar o Talk ↗
+              Acessar Talk
             </a>
             <button
               onClick={onReset}
               style={{
-                flex: 1, padding: '12px', borderRadius: 10,
-                background: 'transparent', color: '#FFFFFF', fontWeight: 600, fontSize: 14,
-                border: '1px solid #2a2d32', cursor: 'pointer',
+                flex: 1, padding: '10px', borderRadius: 6,
+                background: 'transparent', color: '#E0E2E6', fontWeight: 500, fontSize: 13,
+                border: '1px solid #2A2D32', cursor: 'pointer',
                 transition: 'border-color 0.2s, background 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#4C70DA55'; e.currentTarget.style.background = '#4C70DA0D' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2d32'; e.currentTarget.style.background = 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#33363c'; e.currentTarget.style.background = '#2A2D32' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2D32'; e.currentTarget.style.background = 'transparent' }}
             >
               Nova configuração
             </button>
@@ -474,12 +467,12 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
                   })
                 }}
                 style={{
-                  background: 'transparent', border: '1px solid #2a2d32', color: shareCopied ? '#22c55e' : '#ACADBD',
-                  borderRadius: 8, fontSize: 13, padding: '8px 16px', cursor: 'pointer',
+                  background: 'transparent', border: '1px solid #2A2D32', color: shareCopied ? '#22c55e' : '#8E92A4',
+                  borderRadius: 6, fontSize: 12, padding: '8px 16px', cursor: 'pointer',
                   transition: 'border-color 0.2s, color 0.2s', width: '100%',
                 }}
-                onMouseEnter={e => { if (!shareCopied) { e.currentTarget.style.borderColor = '#4C70DA'; e.currentTarget.style.color = '#4C70DA' } }}
-                onMouseLeave={e => { if (!shareCopied) { e.currentTarget.style.borderColor = '#2a2d32'; e.currentTarget.style.color = '#ACADBD' } }}
+                onMouseEnter={e => { if (!shareCopied) { e.currentTarget.style.borderColor = '#33363c'; e.currentTarget.style.color = '#E0E2E6' } }}
+                onMouseLeave={e => { if (!shareCopied) { e.currentTarget.style.borderColor = '#2A2D32'; e.currentTarget.style.color = '#8E92A4' } }}
               >
                 {shareCopied ? '✓ Link copiado!' : '🔗 Compartilhar esta configuração'}
               </button>
@@ -515,38 +508,34 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
             </div>
           )}
 
-          {fromChat && (
-            <>
-              {loadingMaturity && !maturityScore && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  padding: '16px', background: '#202326', borderRadius: 12,
-                  border: '1px solid #2a2d32',
-                }}>
-                  <div style={{
-                    width: 16, height: 16, borderRadius: '50%',
-                    border: '2px solid #4C70DA', borderTopColor: 'transparent',
-                    animation: 'drSpin 0.8s linear infinite', flexShrink: 0,
-                  }} />
-                  <p style={{ fontSize: 13, color: '#ACADBD', margin: 0 }}>
-                    Gerando diagnóstico de maturidade...
-                  </p>
-                </div>
-              )}
-              {maturityScore && (
-                <div style={{ animation: 'drFadeUp 0.4s ease both' }}>
-                  <MaturityScore
-                    score={maturityScore.score}
-                    nivel={maturityScore.nivel}
-                    resumo={maturityScore.resumo}
-                    pontos_fortes={maturityScore.pontos_fortes}
-                    oportunidades={maturityScore.oportunidades}
-                    proximo_passo={maturityScore.proximo_passo}
-                    tempoFinal={tempoFinal}
-                  />
-                </div>
-              )}
-            </>
+          {loadingMaturity && !maturityScore && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              padding: '16px', background: 'var(--talk-bg-secondary)', borderRadius: 12,
+              border: '1px solid var(--talk-border)',
+            }}>
+              <div style={{
+                width: 16, height: 16, borderRadius: '50%',
+                border: '2px solid var(--talk-accent)', borderTopColor: 'transparent',
+                animation: 'drSpin 0.8s linear infinite', flexShrink: 0,
+              }} />
+              <p style={{ fontSize: 13, color: 'var(--talk-text-muted)', margin: 0 }}>
+                Gerando diagnóstico de maturidade...
+              </p>
+            </div>
+          )}
+          {maturityScore && (
+            <div style={{ animation: 'drFadeUp 0.4s ease both' }}>
+              <MaturityScore
+                score={maturityScore.score}
+                nivel={maturityScore.nivel}
+                resumo={maturityScore.resumo}
+                pontos_fortes={maturityScore.pontos_fortes}
+                oportunidades={maturityScore.oportunidades}
+                proximo_passo={maturityScore.proximo_passo}
+                tempoFinal={tempoFinal}
+              />
+            </div>
           )}
         </div>
 
@@ -569,13 +558,13 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => setShowUndoModal(false)}
-                style={{ flex: 1, padding: '11px', borderRadius: 10, fontWeight: 600, fontSize: 14, background: 'transparent', color: '#FFFFFF', border: '1px solid #2a2d32', cursor: 'pointer' }}
+                style={{ flex: 1, padding: '10px', borderRadius: 6, fontWeight: 500, fontSize: 13, background: 'transparent', color: '#FFFFFF', border: '1px solid #2A2D32', cursor: 'pointer' }}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleUndo}
-                style={{ flex: 1, padding: '11px', borderRadius: 10, fontWeight: 600, fontSize: 14, background: '#ef4444', color: '#FFFFFF', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
+                style={{ flex: 1, padding: '10px', borderRadius: 6, fontWeight: 500, fontSize: 13, background: '#ef4444', color: '#FFFFFF', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#dc2626' }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#ef4444' }}
               >
