@@ -750,10 +750,44 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: chatMessages ?? [], onboarding_result: data }),
         })
-          .then(r => r.json())
+          .then(async r => {
+            if (!r.ok) throw new Error()
+            return r.json()
+          })
           .then(score => setMaturityScore(score))
           .catch(() => {/* ignore silently */})
           .finally(() => setLoadingMaturity(false))
+      } else {
+        // Simular o score de maturidade no modo Demo
+        setLoadingMaturity(true)
+        setTimeout(() => {
+          setMaturityScore({
+            score: 75,
+            nivel: "Avançado",
+            resumo: "Sua operação demonstra forte adoção de processos digitais com excelente separação de setores.",
+            pontos_fortes: [
+              "Separação clara entre Comercial e Níveis de Suporte.",
+              "Uso de etiquetas para classificar motivos de contato.",
+              "Implementação de chatbot automatizado para triagem."
+            ],
+            oportunidades: [
+              {
+                titulo: "Integrar IA de Respostas",
+                descricao: "Mapeie perguntas frequentes para o Chatbot IA responder sozinho e poupar seus operadores.",
+                impacto: "Alto",
+                prazo: "Curto prazo"
+              },
+              {
+                titulo: "Criar Campos Personalizados",
+                descricao: "Colete o ID de cliente antes do transbordo para agilizar o suporte técnico.",
+                impacto: "Médio",
+                prazo: "Imediato"
+              }
+            ],
+            proximo_passo: "Ative fluxos de resposta rápida para reduzir o tempo da primeira interação com clientes."
+          })
+          setLoadingMaturity(false)
+        }, 3000)
       }
     } catch (err) {
       setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.')
