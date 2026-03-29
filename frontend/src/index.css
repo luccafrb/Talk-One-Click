@@ -1,1 +1,257 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* ── Paleta Talk (UTalk) ── */
+  --talk-bg-primary:    #141619;
+  --talk-bg-secondary:  #202326;
+  --talk-bg-tertiary:   #252830;
+  --talk-bg-hover:      #2a2d32;
+  --talk-bg-active:     #2f3238;
+  --talk-border:        #2a2d32;
+  --talk-border-light:  #33363c;
+  --talk-accent:        #4C70DA;
+  --talk-accent-hover:  #3d5ec7;
+  --talk-text-primary:  #FFFFFF;
+  --talk-text-secondary:#FFFFFF;
+  --talk-text-muted:    #ACADBD;
+  --talk-success:       #22c55e;
+  --talk-warning:       #f59e0b;
+  --talk-error:         #ef4444;
+
+  /* ── Mapeamento Tailwind/shadcn → Talk ── */
+  --background:         var(--talk-bg-primary);
+  --foreground:         var(--talk-text-primary);
+
+  --card:               var(--talk-bg-secondary);
+  --card-foreground:    var(--talk-text-primary);
+
+  --popover:            var(--talk-bg-tertiary);
+  --popover-foreground: var(--talk-text-primary);
+
+  --primary:            var(--talk-accent);
+  --primary-foreground: #ffffff;
+
+  --secondary:          var(--talk-bg-tertiary);
+  --secondary-foreground: var(--talk-text-primary);
+
+  --muted:              var(--talk-bg-tertiary);
+  --muted-foreground:   var(--talk-text-secondary);
+
+  --accent:             var(--talk-bg-hover);
+  --accent-foreground:  var(--talk-text-primary);
+
+  --destructive:        var(--talk-error);
+  --destructive-foreground: #ffffff;
+
+  --border:             var(--talk-border);
+  --input:              var(--talk-border);
+  --ring:               var(--talk-accent);
+
+  --radius: 0.5rem;
+
+  --sidebar:                     var(--talk-bg-secondary);
+  --sidebar-foreground:          var(--talk-text-primary);
+  --sidebar-primary:             var(--talk-accent);
+  --sidebar-primary-foreground:  #ffffff;
+  --sidebar-accent:              var(--talk-bg-tertiary);
+  --sidebar-accent-foreground:   var(--talk-text-primary);
+  --sidebar-border:              var(--talk-border);
+  --sidebar-ring:                var(--talk-accent);
+
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@theme inline {
+  --font-sans: 'Inter', 'Geist Variable', system-ui, sans-serif;
+
+  --color-background:         var(--background);
+  --color-foreground:         var(--foreground);
+  --color-card:               var(--card);
+  --color-card-foreground:    var(--card-foreground);
+  --color-popover:            var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary:            var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:          var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:              var(--muted);
+  --color-muted-foreground:   var(--muted-foreground);
+  --color-accent:             var(--accent);
+  --color-accent-foreground:  var(--accent-foreground);
+  --color-destructive:        var(--destructive);
+  --color-border:             var(--border);
+  --color-input:              var(--input);
+  --color-ring:               var(--ring);
+
+  --color-sidebar:                    var(--sidebar);
+  --color-sidebar-foreground:         var(--sidebar-foreground);
+  --color-sidebar-primary:            var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:             var(--sidebar-accent);
+  --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+  --color-sidebar-border:             var(--sidebar-border);
+  --color-sidebar-ring:               var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.5);
+  --radius-xl: calc(var(--radius) * 2);
+  --radius-2xl: calc(var(--radius) * 3);
+}
+
+*, *::before, *::after {
+  transition-duration: 0.2s !important;
+  transition-timing-function: ease !important;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  * {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* ── Body: fundo Talk, sem gradientes ── */
+body {
+  background-color: var(--talk-bg-primary);
+}
+
+#root {
+  min-height: 100svh;
+  position: relative;
+}
+
+/* ── Cards: estilo Talk ── */
+[data-slot="card"] {
+  background: var(--talk-bg-secondary) !important;
+  border: 1px solid var(--talk-border) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+[data-slot="card-title"] {
+  color: var(--talk-text-primary) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+[data-slot="card-description"] {
+  color: #ACADBD !important;
+  font-size: 13px !important;
+}
+
+/* ── Labels ── */
+label, [data-slot="label"] {
+  color: var(--talk-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── Inputs e Textareas ── */
+input,
+textarea,
+[role="combobox"] {
+  background-color: var(--talk-bg-primary) !important;
+  color: var(--talk-text-primary) !important;
+  border-color: var(--talk-border) !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+[role="combobox"][data-placeholder]::placeholder {
+  color: #ACADBD !important;
+  opacity: 1 !important;
+}
+
+::placeholder {
+  color: #ACADBD !important;
+  opacity: 1 !important;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  border-color: var(--talk-accent) !important;
+  box-shadow: 0 0 0 3px rgba(76, 112, 218, 0.15) !important;
+  outline: none !important;
+}
+
+/* ── Select dropdown ── */
+[data-slot="select-content"] {
+  background-color: var(--talk-bg-tertiary) !important;
+  border-color: var(--talk-border-light) !important;
+  border-radius: 8px !important;
+}
+
+[data-slot="select-item"] {
+  color: var(--talk-text-primary) !important;
+  font-size: 14px !important;
+}
+
+[data-slot="select-item"]:hover,
+[data-slot="select-item"]:focus {
+  background-color: var(--talk-bg-hover) !important;
+}
+
+/* ── Checkboxes ── */
+input[type="checkbox"] {
+  accent-color: var(--talk-accent);
+}
+
+/* ── Selection cards: borda gradiente no hover ── */
+.selection-card {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.selection-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #4C70DA, #7b93e8, #a5b8f0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.selection-card:hover::before {
+  opacity: 1;
+}
+
+/* ── Scrollbar personalizada ── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--talk-border-light);
+  border-radius: 4px;
+}
