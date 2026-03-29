@@ -39,9 +39,9 @@ function formatValue(key, value) {
 
 function TypingIndicator() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 14px', borderRadius: 16, borderBottomLeftRadius: 4, background: '#2a2d32', width: 'fit-content' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 14px', borderRadius: 8, borderBottomLeftRadius: 0, background: 'var(--talk-bg-hover)', width: 'fit-content' }}>
       {[0, 1, 2].map(i => (
-        <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#4C70DA', display: 'inline-block', animation: `discovery-pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+        <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--talk-text-muted)', display: 'inline-block', animation: `discovery-pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
       ))}
     </div>
   )
@@ -79,7 +79,7 @@ function DraftField({ icon, label, value, chips }) {
           ? chips.length > 0
             ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {chips.map((c, i) => (
-                  <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#252830', border: '1px solid #2a2d32', color: '#FFFFFF' }}>{c}</span>
+                  <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'var(--talk-bg-hover)', border: '1px solid var(--talk-border)', color: 'var(--talk-text-primary)' }}>{c}</span>
                 ))}
               </div>
             : <p style={{ fontSize: 13, color: '#ACADBD' }}>—</p>
@@ -128,13 +128,13 @@ function DraftPanel({ draft, ready, loading, onFinalize }) {
           onClick={onFinalize}
           disabled={loading}
           style={{
-            marginTop: 8, width: '100%', padding: '12px', borderRadius: 10,
+            marginTop: 8, width: '100%', padding: '10px 14px', borderRadius: 6,
             background: loading ? '#16a34a99' : '#22c55e', color: 'white',
-            fontWeight: 600, fontSize: 14, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+            fontWeight: 600, fontSize: 13, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
             transition: 'background 0.2s',
           }}
         >
-          {loading ? 'Finalizando...' : 'Revisar e configurar →'}
+          {loading ? 'Finalizando...' : 'Revisar e configurar'}
         </button>
       )}
     </div>
@@ -270,14 +270,11 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
           >
             ← Voltar
           </button>
-          <h1
-            className=""
-            style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)', marginBottom: 6 }}
-          >
+          <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--talk-text-primary)', margin: 0 }}>
             Talk One-Click
           </h1>
-          <p style={{ fontSize: '1rem', color: '#ACADBD', marginBottom: 0 }}>
-            Converse com nossa IA para montar a configuração ideal
+          <p style={{ fontSize: 14, color: 'var(--talk-text-muted)', margin: '4px 0 0' }}>
+            Converse com nossa IA e conte-nos sobre o seu negócio.
           </p>
         </div>
       </div>
@@ -292,12 +289,13 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
               {messages.map((msg, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                   <div style={{
-                    maxWidth: '80%', padding: '10px 14px',
-                    borderRadius: 16,
-                    borderBottomLeftRadius: msg.role === 'assistant' ? 4 : 16,
-                    borderBottomRightRadius: msg.role === 'user' ? 4 : 16,
-                    background: msg.role === 'user' ? '#4C70DA' : '#2a2d32',
-                    color: '#FFFFFF', fontSize: 14, lineHeight: 1.55,
+                    maxWidth: '85%', padding: '10px 14px',
+                    borderRadius: 8,
+                    borderBottomLeftRadius: msg.role === 'assistant' ? 0 : 8,
+                    borderBottomRightRadius: msg.role === 'user' ? 0 : 8,
+                    background: msg.role === 'user' ? 'var(--talk-accent)' : 'var(--talk-bg-hover)',
+                    color: msg.role === 'user' ? '#FFFFFF' : 'var(--talk-text-primary)',
+                    fontSize: 14, lineHeight: 1.5,
                     wordBreak: 'break-word',
                   }}>
                     {msg.content}
@@ -323,8 +321,8 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
                 disabled={loading}
                 placeholder="Digite sua resposta..."
                 style={{
-                  flex: 1, background: '#141619', border: `1px solid ${inputFocused ? '#4C70DA' : '#2a2d32'}`,
-                  borderRadius: 8, padding: '10px 14px', color: '#FFFFFF', fontSize: 14,
+                  flex: 1, background: 'var(--talk-bg-primary)', border: `1px solid ${inputFocused ? 'var(--talk-accent)' : 'var(--talk-border)'}`,
+                  borderRadius: 6, padding: '10px 14px', color: 'var(--talk-text-primary)', fontSize: 14,
                   outline: 'none', transition: 'border-color 0.2s',
                   opacity: loading ? 0.6 : 1,
                 }}
@@ -333,14 +331,14 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
                 style={{
-                  background: loading || !input.trim() ? '#2a2d32' : '#4C70DA',
-                  color: loading || !input.trim() ? '#FFFFFF' : 'white',
-                  border: 'none', borderRadius: 8, padding: '10px 18px',
-                  fontWeight: 700, fontSize: 16, cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
+                  background: loading || !input.trim() ? 'var(--talk-bg-hover)' : 'var(--talk-accent)',
+                  color: loading || !input.trim() ? 'var(--talk-text-muted)' : 'white',
+                  border: 'none', borderRadius: 6, padding: '10px 18px',
+                  fontWeight: 600, fontSize: 14, cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
                   transition: 'background 0.2s, color 0.2s', flexShrink: 0,
                 }}
               >
-                →
+                Enviar
               </button>
             </div>
           </Card>
