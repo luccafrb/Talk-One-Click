@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import MaturityScore from './MaturityScore'
 
 const TAG_COLOR_HEX = {
@@ -130,9 +131,59 @@ function TimelineItem({ title, detail, badge, pills, delay, isLast, ok }) {
   )
 }
 
-export default function DeployResult({ result, tempoFinal, fromChat, maturityScore, loadingMaturity, onReset }) {
+export default function DeployResult({ result, tempoFinal, fromChat, maturityScore, loadingMaturity, credentials, isDemoMode, onReset }) {
   const sc = STATUS_CFG[result.status] ?? STATUS_CFG.partial
   const errors = result.errors ?? []
+
+  const [showUndoModal, setShowUndoModal] = useState(false)
+  const [undoLoading, setUndoLoading] = useState(false)
+  const [undoDone, setUndoDone] = useState(false)
+  const [undoToast, setUndoToast] = useState(null)
+
+  useEffect(() => {
+    if (undoToast) {
+      const t = setTimeout(() => setUndoToast(null), 4000)
+      return () => clearTimeout(t)
+    }
+  }, [undoToast])
+
+  async function handleUndo() {
+    setUndoLoading(true)
+    setShowUndoModal(false)
+    try {
+      if (isDemoMode) {
+        await new Promise(r => setTimeout(r, 2000))
+        setUndoDone(true)
+        setUndoToast({ type: 'ok', message: 'Configuração desfeita com sucesso' })
+        return
+      }
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/onboarding/undo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          talk_api_key: credentials.talk_api_key,
+          organization_id: credentials.organization_id,
+          sector_ids: (result.sectors ?? []).map(s => s.id),
+          label_ids: (result.labels ?? []).map(l => l.id),
+          chatbot_id: null,
+          channel_id: result.channel_id ?? null,
+        }),
+      })
+      const data = await res.json()
+      if (data.status === 'ok') {
+        setUndoDone(true)
+        setUndoToast({ type: 'ok', message: 'Configuração desfeita com sucesso' })
+      } else if (data.status === 'partial') {
+        setUndoToast({ type: 'partial', message: 'Desfeito parcialmente — verifique manualmente' })
+      } else {
+        setUndoToast({ type: 'error', message: data.errors?.[0]?.error || 'Erro ao desfazer' })
+      }
+    } catch {
+      setUndoToast({ type: 'error', message: 'Erro ao conectar ao servidor' })
+    } finally {
+      setUndoLoading(false)
+    }
+  }
 
   // Build timeline items with computed delays
   const items = []
@@ -409,6 +460,35 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
             </button>
           </div>
 
+          {/* Undo button */}
+          {result.status !== 'error' && (
+            <div style={{ textAlign: 'center', marginTop: 8 }}>
+              {undoDone ? (
+                <span style={{ fontSize: 12, color: '#22c55e' }}>✓ Desfeito</span>
+              ) : (
+                <button
+                  onClick={() => setShowUndoModal(true)}
+                  disabled={undoLoading}
+                  style={{
+                    background: 'none', border: 'none', cursor: undoLoading ? 'not-allowed' : 'pointer',
+                    color: undoLoading ? '#6b7280' : '#ACADBD', fontSize: 12,
+                    padding: '4px 8px', transition: 'color 0.2s ease',
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                  }}
+                  onMouseEnter={e => { if (!undoLoading) e.currentTarget.style.color = '#ef4444' }}
+                  onMouseLeave={e => { if (!undoLoading) e.currentTarget.style.color = '#ACADBD' }}
+                >
+                  {undoLoading ? (
+                    <>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1.5px solid #6b7280', borderTopColor: 'transparent', animation: 'drSpin 0.7s linear infinite', flexShrink: 0 }} />
+                      Desfazendo...
+                    </>
+                  ) : '🗑️ Desfazer tudo'}
+                </button>
+              )}
+            </div>
+          )}
+
           {fromChat && (
             <>
               {loadingMaturity && !maturityScore && (
@@ -445,6 +525,54 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
         </div>
 
       </div>
+
+      {/* Undo Modal */}
+      {showUndoModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px',
+        }}
+          onClick={e => { if (e.target === e.currentTarget) setShowUndoModal(false) }}
+        >
+          <div style={{ background: '#202326', border: '1px solid #2a2d32', borderRadius: 16, padding: 28, maxWidth: 400, width: '100%' }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 10 }}>Desfazer configuração?</h2>
+            <p style={{ fontSize: 13, color: '#ACADBD', lineHeight: 1.6, marginBottom: 20 }}>
+              Isso irá deletar os <strong style={{ color: '#FFFFFF' }}>{result.sectors_created} setor(es)</strong>,{' '}
+              <strong style={{ color: '#FFFFFF' }}>{result.labels_created} etiqueta(s)</strong> e o chatbot criados agora. Essa ação não pode ser desfeita.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setShowUndoModal(false)}
+                style={{ flex: 1, padding: '11px', borderRadius: 10, fontWeight: 600, fontSize: 14, background: 'transparent', color: '#FFFFFF', border: '1px solid #2a2d32', cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUndo}
+                style={{ flex: 1, padding: '11px', borderRadius: 10, fontWeight: 600, fontSize: 14, background: '#ef4444', color: '#FFFFFF', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#dc2626' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#ef4444' }}
+              >
+                Sim, desfazer tudo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {undoToast && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9999, padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+          color: '#FFFFFF', whiteSpace: 'nowrap',
+          background: undoToast.type === 'ok' ? '#16a34a' : undoToast.type === 'partial' ? '#b45309' : '#dc2626',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          animation: 'drFadeUp 0.3s ease both',
+        }}>
+          {undoToast.message}
+        </div>
+      )}
     </div>
   )
 }

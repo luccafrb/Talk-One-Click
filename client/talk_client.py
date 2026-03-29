@@ -28,6 +28,9 @@ class TalkClient:
     async def put(self, path: str, json: dict) -> dict:
         return await self._request("PUT", path, json=json)
 
+    async def delete(self, path: str) -> dict:
+        return await self._request("DELETE", path)
+
     async def _request(self, method: str, path: str, **kwargs) -> dict:
         url = _BASE_URL.rstrip("/") + "/" + path.lstrip("/")
         params = {"organizationId": self._organization_id}

@@ -141,7 +141,7 @@ function DraftPanel({ draft, ready, loading, onFinalize }) {
   )
 }
 
-export default function DiscoveryChat({ onComplete, onBack }) {
+export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
   const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState(null)
   const [ready, setReady] = useState(false)
@@ -149,6 +149,7 @@ export default function DiscoveryChat({ onComplete, onBack }) {
   const [loading, setLoading] = useState(false)
   const [finalizing, setFinalizing] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
+  const [demoStep, setDemoStep] = useState(0)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -161,10 +162,22 @@ export default function DiscoveryChat({ onComplete, onBack }) {
   async function startChat() {
     setLoading(true)
     try {
-      const res = await fetch(`${API}/onboarding/chat/start`, { method: 'POST' })
-      const data = await res.json()
-      setMessages([{ role: 'assistant', content: data.message }])
-      setDraft(data.draft)
+      if (isDemoMode) {
+        await new Promise(r => setTimeout(r, 800))
+        const data = await fetch(`${API}/onboarding/chat/demo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 0 }),
+        }).then(r => r.json())
+        setMessages([{ role: 'assistant', content: data.message }])
+        setDraft(data.draft)
+        setDemoStep(1)
+      } else {
+        const res = await fetch(`${API}/onboarding/chat/start`, { method: 'POST' })
+        const data = await res.json()
+        setMessages([{ role: 'assistant', content: data.message }])
+        setDraft(data.draft)
+      }
     } finally {
       setLoading(false)
     }
@@ -179,6 +192,19 @@ export default function DiscoveryChat({ onComplete, onBack }) {
     inputRef.current?.focus()
     setLoading(true)
     try {
+      if (isDemoMode) {
+        await new Promise(r => setTimeout(r, 1500))
+        const data = await fetch(`${API}/onboarding/chat/demo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: demoStep }),
+        }).then(r => r.json())
+        setMessages([...newMessages, { role: 'assistant', content: data.message }])
+        setDraft(data.draft)
+        setReady(data.ready)
+        setDemoStep(s => s + 1)
+        return
+      }
       const res = await fetch(`${API}/onboarding/chat/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -8,6 +8,21 @@ export default function CredentialsGate({ onConnect }) {
   const [showKey, setShowKey] = useState(false)
   const [validating, setValidating] = useState(false)
   const [error, setError] = useState(null)
+  const [showDemoBadge, setShowDemoBadge] = useState(false)
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D') {
+        e.preventDefault()
+        setApiKey('demo-mode-active')
+        setOrgId('DEMO-ORG-123')
+        setShowDemoBadge(true)
+        setTimeout(() => onConnect('demo-mode-active', 'DEMO-ORG-123'), 500)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onConnect])
 
   const canConnect = apiKey.trim() !== '' && orgId.trim() !== '' && !validating
 
@@ -45,6 +60,16 @@ export default function CredentialsGate({ onConnect }) {
       padding: '24px 16px',
       background: '#141619',
     }}>
+      {showDemoBadge && (
+        <div style={{
+          position: 'fixed', top: 12, right: 12, zIndex: 9999,
+          background: '#4C70DA22', border: '1px solid #4C70DA44',
+          borderRadius: 20, fontSize: 11, color: '#4C70DA',
+          padding: '4px 12px',
+        }}>
+          🎬 Modo Demo
+        </div>
+      )}
       <style>{`
         @keyframes cgFadeIn {
           from { opacity: 0; transform: translateY(16px); }

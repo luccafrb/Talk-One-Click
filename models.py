@@ -147,3 +147,20 @@ class SurpriseRequest(BaseModel):
 class ValidateCredentialsRequest(BaseModel):
     talk_api_key: str
     organization_id: str
+
+
+class UndoRequest(BaseModel):
+    talk_api_key: str
+    organization_id: str
+    sector_ids: list[str] = Field(default_factory=list)
+    label_ids: list[str] = Field(default_factory=list)
+    chatbot_id: str | None = None
+    channel_id: str | None = None
+
+
+class UndoResult(BaseModel):
+    status: OnboardingStatus
+    deleted_sectors: int = 0
+    deleted_labels: int = 0
+    deleted_chatbot: bool = False
+    errors: list[StepError] = Field(default_factory=list)

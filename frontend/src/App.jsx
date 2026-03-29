@@ -605,6 +605,21 @@ export default function App() {
     _hasSaved ? { talk_api_key: _savedKey, organization_id: _savedOrg } : { talk_api_key: '', organization_id: '' }
   )
   const [status, setStatus] = useState(_hasSaved ? 'select' : 'credentials') // credentials | select | form | chat | loading | result
+  const isDemoMode = credentials.talk_api_key === 'demo-mode-active'
+
+  const demoBadge = isDemoMode ? (
+    <div
+      title="Modo de demonstração ativo — nenhuma ação real será executada"
+      style={{
+        position: 'fixed', top: 12, right: 12, zIndex: 9999,
+        background: '#4C70DA22', border: '1px solid #4C70DA44',
+        borderRadius: 20, fontSize: 11, color: '#4C70DA',
+        padding: '4px 12px', cursor: 'default', userSelect: 'none',
+      }}
+    >
+      🎬 Modo Demo
+    </div>
+  ) : null
   const [hoveredCard, setHoveredCard] = useState(null)
   const [hoveredButton, setHoveredButton] = useState(null)
   const isDesktop = useIsDesktop()
@@ -624,6 +639,21 @@ export default function App() {
   function setField(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
   }
+
+  useEffect(() => {
+    if (isDemoMode) {
+      setForm(f => ({
+        ...f,
+        business_name: 'Umbler',
+        segment: 'tecnologia',
+        goal: 'Organizar suporte técnico, reduzir tempo de resposta e separar atendimento por nível de complexidade',
+        approach: 'tecnico',
+        create_sectors: true,
+        create_labels: true,
+        create_chatbot: true,
+      }))
+    }
+  }, [isDemoMode])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -670,7 +700,8 @@ export default function App() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/onboarding`, {
+      const endpoint = isDemoMode ? `${API_URL}/onboarding/demo` : `${API_URL}/onboarding`
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -797,19 +828,21 @@ export default function App() {
   )
 
 
-  if (status === 'transitioning') return <FillingAnimation />
-  if (status === 'loading') return <OnboardingTimer startTime={startTime ?? Date.now()} />
-  if (status === 'result') return <DeployResult result={result} tempoFinal={tempoFinal} fromChat={fromChat} maturityScore={maturityScore} loadingMaturity={loadingMaturity} onReset={() => { setStatus('select'); setResult(null); setTempoFinal(null); setFromChat(false); setChatMessages(null); setMaturityScore(null); setLoadingMaturity(false) }} />
+  if (status === 'transitioning') return <>{demoBadge}<FillingAnimation /></>
+  if (status === 'loading') return <>{demoBadge}<OnboardingTimer startTime={startTime ?? Date.now()} /></>
+  if (status === 'result') return <>{demoBadge}<DeployResult result={result} tempoFinal={tempoFinal} fromChat={fromChat} maturityScore={maturityScore} loadingMaturity={loadingMaturity} credentials={credentials} isDemoMode={isDemoMode} onReset={() => { setStatus('select'); setResult(null); setTempoFinal(null); setFromChat(false); setChatMessages(null); setMaturityScore(null); setLoadingMaturity(false) }} /></>
 
   if (status === 'chat') return (
-    <DiscoveryChat
+    <>{demoBadge}<DiscoveryChat
       onComplete={handleChatComplete}
       onBack={() => setStatus('select')}
-    />
+      isDemoMode={isDemoMode}
+    /></>
   )
 
   if (status === 'select') return (
     <>
+      {demoBadge}
       {/* Modal Surpreenda-me */}
       {showSurpriseModal && (
         <div
@@ -1027,6 +1060,8 @@ export default function App() {
   )
 
   return (
+    <>
+    {demoBadge}
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px 24px' }}>
 
       {/* Cabeçalho — fora do grid, largura total */}
@@ -1449,5 +1484,6 @@ export default function App() {
       </div>
       </div>
     </div>
+    </>
   )
 }

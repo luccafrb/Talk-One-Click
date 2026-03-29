@@ -6,8 +6,9 @@ load_dotenv()
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
-from models import OnboardingRequest, OnboardingResult, ChatSessionRequest, ChatSessionResponse, MaturityRequest, SurpriseRequest, ValidateCredentialsRequest
+from models import OnboardingRequest, OnboardingResult, ChatSessionRequest, ChatSessionResponse, MaturityRequest, SurpriseRequest, ValidateCredentialsRequest, UndoRequest
 from orchestrator import Orchestrator
 from ai.discovery_agent import DiscoveryAgent
 from ai.ai_configurator import AiConfigurator
@@ -97,3 +98,132 @@ async def surprise_onboarding(request: SurpriseRequest):
         request.business_name or "",
         request.description,
     )
+
+
+@app.post("/onboarding/demo")
+async def onboarding_demo():
+    import asyncio
+    await asyncio.sleep(6)
+    return {
+        "status": "ok",
+        "sectors_created": 3,
+        "sectors": [
+            {"name": "Suporte N1", "id": "demo-sector-1"},
+            {"name": "Suporte N2", "id": "demo-sector-2"},
+            {"name": "Comercial", "id": "demo-sector-3"},
+        ],
+        "labels_created": 4,
+        "labels": [
+            {"name": "Bug", "id": "demo-label-1", "color": "Tomato"},
+            {"name": "Dúvida", "id": "demo-label-2", "color": "Blue"},
+            {"name": "Churning", "id": "demo-label-3", "color": "Salmon"},
+            {"name": "Onboarding", "id": "demo-label-4", "color": "Green"},
+        ],
+        "chatbot_created": True,
+        "channel_id": "demo-channel-123",
+        "members_invited": 0,
+        "members": [],
+        "quick_answers_created": 0,
+        "custom_fields_created": 0,
+        "org_preferences_configured": False,
+        "ai_agent_created": False,
+        "errors": [],
+    }
+
+
+class DemoChatRequest(BaseModel):
+    step: int = 0
+
+_DEMO_STEPS = [
+    {
+        "message": "Olá! Sou a IA de configuração da Talk. Para começar: o que sua empresa vende ou atende?",
+        "draft": {"business_name": None, "segment": None, "goal": None, "approach": None, "suggested_sectors": [], "suggested_labels": [], "create_chatbot": None, "chatbot_description": None, "create_channel": None, "channel_name": None, "member_emails": [], "confidence": 0},
+        "ready": False,
+    },
+    {
+        "message": "Entendi! Uma empresa de tecnologia com foco em hospedagem. Qual é o principal tipo de conversa que vocês recebem dos clientes hoje?",
+        "draft": {"business_name": "Umbler", "segment": "tecnologia", "goal": None, "approach": None, "suggested_sectors": [], "suggested_labels": [], "create_chatbot": None, "chatbot_description": None, "create_channel": None, "channel_name": None, "member_emails": [], "confidence": 25},
+        "ready": False,
+    },
+    {
+        "message": "Faz sentido — suporte técnico e dúvidas sobre planos. Quando um cliente entra em contato, o que ele normalmente quer resolver?",
+        "draft": {"business_name": "Umbler", "segment": "tecnologia", "goal": "Organizar suporte e separar por nível de complexidade", "approach": None, "suggested_sectors": [], "suggested_labels": [], "create_chatbot": None, "chatbot_description": None, "create_channel": None, "channel_name": None, "member_emails": [], "confidence": 45},
+        "ready": False,
+    },
+    {
+        "message": "Ótimo. Seu time é dividido por especialidade ou todo mundo atende qualquer tipo de chamado?",
+        "draft": {"business_name": "Umbler", "segment": "tecnologia", "goal": "Organizar suporte técnico, reduzir tempo de resposta e separar atendimento por nível de complexidade", "approach": "tecnico", "suggested_sectors": [], "suggested_labels": [], "create_chatbot": None, "chatbot_description": None, "create_channel": None, "channel_name": None, "member_emails": [], "confidence": 65},
+        "ready": False,
+    },
+    {
+        "message": "Perfeito! Com base no que você me contou, faz sentido criar os setores: Suporte N1, Suporte N2 e Comercial. Quer manter assim ou ajustar?",
+        "draft": {"business_name": "Umbler", "segment": "tecnologia", "goal": "Organizar suporte técnico, reduzir tempo de resposta e separar atendimento por nível de complexidade", "approach": "tecnico", "suggested_sectors": ["Suporte N1", "Suporte N2", "Comercial"], "suggested_labels": ["Bug", "Dúvida", "Churning", "Onboarding"], "create_chatbot": None, "chatbot_description": None, "create_channel": None, "channel_name": None, "member_emails": [], "confidence": 85},
+        "ready": False,
+    },
+    {
+        "message": "Configuração definida! Vou montar tudo agora para a Umbler.",
+        "draft": {"business_name": "Umbler", "segment": "tecnologia", "goal": "Organizar suporte técnico, reduzir tempo de resposta e separar atendimento por nível de complexidade", "approach": "tecnico", "suggested_sectors": ["Suporte N1", "Suporte N2", "Comercial"], "suggested_labels": ["Bug", "Dúvida", "Churning", "Onboarding"], "create_chatbot": True, "chatbot_description": "Chatbot de recepção que direciona por nível de suporte", "create_channel": False, "channel_name": None, "member_emails": [], "confidence": 100},
+        "ready": True,
+    },
+]
+
+@app.post("/onboarding/chat/demo")
+async def chat_demo(request: DemoChatRequest):
+    step = min(request.step, len(_DEMO_STEPS) - 1)
+    return _DEMO_STEPS[step]
+
+
+@app.post("/onboarding/undo")
+async def onboarding_undo(request: UndoRequest):
+    from client.talk_client import TalkClient
+    from errors import TalkApiError
+    errors = []
+    deleted_sectors = 0
+    deleted_labels = 0
+    deleted_chatbot = False
+
+    client = TalkClient(request.talk_api_key, request.organization_id)
+
+    for sector_id in request.sector_ids:
+        try:
+            await client.delete(f"/v1/sectors/{sector_id}/")
+            deleted_sectors += 1
+        except TalkApiError as e:
+            errors.append({"step": f"sector:{sector_id}", "error": str(e)})
+        except Exception as e:
+            errors.append({"step": f"sector:{sector_id}", "error": str(e)})
+
+    for label_id in request.label_ids:
+        try:
+            await client.delete(f"/v1/tags/{label_id}/")
+            deleted_labels += 1
+        except TalkApiError as e:
+            errors.append({"step": f"label:{label_id}", "error": str(e)})
+        except Exception as e:
+            errors.append({"step": f"label:{label_id}", "error": str(e)})
+
+    if request.chatbot_id:
+        try:
+            await client.delete(f"/v1/bots/{request.chatbot_id}/")
+            deleted_chatbot = True
+        except TalkApiError as e:
+            errors.append({"step": "chatbot", "error": str(e)})
+        except Exception as e:
+            errors.append({"step": "chatbot", "error": str(e)})
+
+    # channel_id is intentionally ignored — channels should not be auto-deleted
+
+    if errors and deleted_sectors == 0 and deleted_labels == 0 and not deleted_chatbot:
+        status = "error"
+    elif errors:
+        status = "partial"
+    else:
+        status = "ok"
+
+    return {
+        "status": status,
+        "deleted_sectors": deleted_sectors,
+        "deleted_labels": deleted_labels,
+        "deleted_chatbot": deleted_chatbot,
+        "errors": errors,
+    }
