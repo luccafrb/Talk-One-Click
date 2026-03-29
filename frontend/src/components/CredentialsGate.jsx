@@ -58,7 +58,7 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px 16px',
-      background: '#141619',
+      background: 'var(--talk-bg-primary)',
     }}>
       {sharedConfigBanner && (
         <div style={{
@@ -92,12 +92,12 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
         .cg-input {
           width: 100%;
           box-sizing: border-box;
-          background: #141619;
-          border: 1px solid #2a2d32;
+          background: var(--talk-bg-primary);
+          border: 1px solid var(--talk-border);
           border-radius: 8px;
-          padding: 10px 14px;
-          color: #FFFFFF;
-          font-size: 14px;
+          padding: 12px 16px;
+          color: var(--talk-text-primary);
+          font-size: 16px;
           font-family: inherit;
           outline: none;
           transition: border-color 0.2s;
@@ -108,15 +108,15 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
         .cg-input:disabled { opacity: 0.5; cursor: not-allowed; }
         .cg-btn-connect {
           width: 100%;
-          padding: 12px;
-          border-radius: 10px;
+          padding: 14px;
+          border-radius: 8px;
           border: none;
-          font-weight: 700;
-          font-size: 15px;
+          font-weight: 600;
+          font-size: 16px;
           font-family: inherit;
           cursor: pointer;
           transition: background 0.2s, opacity 0.2s;
-          background: #4C70DA;
+          background: var(--talk-accent);
           color: #FFFFFF;
           display: flex;
           align-items: center;
@@ -124,11 +124,12 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
           gap: 8px;
         }
         .cg-btn-connect:disabled {
-          background: #2a3a6a;
+          background: var(--talk-bg-hover);
+          color: var(--talk-text-muted);
           cursor: not-allowed;
-          opacity: 0.7;
+          opacity: 0.8;
         }
-        .cg-btn-connect:not(:disabled):hover { background: #5a7ee0; }
+        .cg-btn-connect:not(:disabled):hover { background: var(--talk-accent-hover); }
         .cg-spinner {
           width: 16px; height: 16px; border-radius: 50%;
           border: 2px solid rgba(255,255,255,0.3);
@@ -137,10 +138,10 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
           flex-shrink: 0;
         }
         .cg-eye-btn {
-          position: absolute; right: 10px; top: 50%;
+          position: absolute; right: 14px; top: 50%;
           transform: translateY(-50%);
           background: none; border: none; cursor: pointer;
-          color: #6b7280; padding: 4px; line-height: 1; font-size: 15px;
+          color: #6b7280; padding: 4px; line-height: 1; font-size: 16px;
           transition: color 0.15s;
         }
         .cg-eye-btn:hover { color: #ACADBD; }
@@ -149,38 +150,37 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
       `}</style>
 
       <div className="cg-card" style={{
-        background: '#202326',
-        border: `1px solid ${error ? 'rgba(239,68,68,0.3)' : '#2a2d32'}`,
-        borderRadius: 18,
-        padding: '36px 32px',
+        background: 'var(--talk-bg-secondary)',
+        border: `1px solid ${error ? 'var(--talk-error)' : 'var(--talk-border)'}`,
+        borderRadius: 12,
+        padding: '40px 36px',
         width: '100%',
-        maxWidth: 440,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        maxWidth: 480,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
         transition: 'border-color 0.2s',
       }}>
         {/* Logo / title */}
-        <div style={{ marginBottom: 28, textAlign: 'center' }}>
+        <div style={{ marginBottom: 32, textAlign: 'center' }}>
           <h1 style={{
-            fontWeight: 800,
-            fontSize: 'clamp(1.8rem, 5vw, 2.6rem)',
+            fontWeight: 700,
+            fontSize: 32,
             letterSpacing: '-0.02em',
             lineHeight: 1.1,
-            color: '#FFFFFF',
-            textShadow: '0 2px 16px rgba(76,112,218,0.35)',
+            color: 'var(--talk-text-primary)',
             marginBottom: 8,
           }}>
             Talk One-Click
           </h1>
-          <p style={{ color: '#ACADBD', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
-            Conecte sua conta Talk para começar a configuração automática
+          <p style={{ color: 'var(--talk-text-muted)', fontSize: 15, lineHeight: 1.5, margin: 0 }}>
+            Conecte sua conta Talk para configurar sua empresa
           </p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* API Key */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF' }}>API Key</label>
+              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--talk-text-primary)' }}>API Key</label>
               <a href="https://rc-app-talk.umbler.com/profile" target="_blank" rel="noreferrer" className="cg-link">
                 Perfil → Tokens de Acesso ↗
               </a>
@@ -203,9 +203,9 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
           </div>
 
           {/* Organization ID */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF' }}>Organization ID</label>
+              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--talk-text-primary)' }}>Organization ID</label>
               <a href="https://rc-app-talk.umbler.com/preferences/organization" target="_blank" rel="noreferrer" className="cg-link">
                 Configurações da organização ↗
               </a>
