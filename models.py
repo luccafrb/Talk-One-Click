@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 Segment = Literal["beleza", "saude", "ecommerce", "educacao"]
 OnboardingStatus = Literal["ok", "partial", "error"]
+AiAgentType = Literal["support", "sales", "qualification", "greeting", "sector_forwarding", "tagging"]
 
 
 class OnboardingRequest(BaseModel):
@@ -18,8 +19,21 @@ class OnboardingRequest(BaseModel):
     talk_api_key: str
     organization_id: str
     chatbot_flow: Literal["menu", "collect", "welcome_only"] | None = "collect"
+    # Resource toggles
+    create_sectors: bool = True
+    sectors_description: str | None = None
+    create_labels: bool = True
+    labels_description: str | None = None
+    create_channel: bool = True
     channel_name: str | None = None
+    create_chatbot: bool = True
     chatbot_description: str | None = None
+    # Members
+    member_emails: list[str] | None = None
+    # AI agent
+    create_ai_agent: bool = False
+    ai_agent_type: AiAgentType | None = None
+    ai_agent_description: str | None = None
 
 
 class AiConfig(BaseModel):
@@ -50,4 +64,6 @@ class OnboardingResult(BaseModel):
     labels: list[dict] = Field(default_factory=list)
     chatbot_created: bool = False
     channel_id: str | None = None
+    members_invited: int = 0
+    ai_agent_created: bool = False
     errors: list[StepError] = Field(default_factory=list)
