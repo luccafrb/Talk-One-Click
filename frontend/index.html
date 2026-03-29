@@ -129,6 +129,100 @@
     select { cursor: pointer; }
     select option { background: var(--surface2); }
 
+    /* Resource block */
+    .resource-block {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+
+    .resource-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .resource-header .resource-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .resource-header .resource-hint {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .resource-body { margin-top: 12px; }
+
+    .resource-body label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .resource-body textarea {
+      min-height: 56px;
+      font-size: 13px;
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 20px;
+      transition: background .2s;
+      cursor: pointer;
+    }
+
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 14px;
+      height: 14px;
+      background: var(--muted);
+      border-radius: 50%;
+      transition: transform .2s, background .2s;
+    }
+
+    .toggle input:checked + .toggle-track { background: var(--accent); }
+    .toggle input:checked + .toggle-track::after {
+      transform: translateX(16px);
+      background: #fff;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+
     .btn {
       width: 100%;
       padding: 11px;
@@ -301,17 +395,6 @@
       line-height: 1.6;
     }
 
-    .channel-id-row {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 8px 12px;
-      font-size: 12px;
-      font-family: monospace;
-      color: var(--muted);
-      word-break: break-all;
-    }
-
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
       header { padding: 14px 20px; }
@@ -373,24 +456,110 @@
         <input type="text" id="organization_id" required placeholder="seu-organization-id" />
       </div>
 
-      <div class="field">
-        <label>Nome do canal WhatsApp (opcional)</label>
-        <input type="text" id="channel_name" placeholder="Ex: WhatsApp Atendimento" />
+      <hr class="section-divider" />
+      <div class="section-label">Recursos a criar</div>
+
+      <!-- Setores -->
+      <div class="resource-block">
+        <div class="resource-header" onclick="toggleResource('sectors')">
+          <label class="toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="create_sectors" checked onchange="syncToggle('sectors')" />
+            <span class="toggle-track"></span>
+          </label>
+          <span class="resource-label">Setores</span>
+          <span class="resource-hint">IA gera automaticamente</span>
+        </div>
+        <div class="resource-body" id="sectors-body">
+          <label>Instruções para a IA (opcional)</label>
+          <textarea id="sectors_description" placeholder="Ex: Quero setores voltados para atendimento VIP e suporte técnico"></textarea>
+        </div>
       </div>
 
-      <div class="field">
-        <label>Fluxo padrão do chatbot</label>
-        <select id="chatbot_flow">
-          <option value="collect">Collect (coleta nome e e-mail)</option>
-          <option value="menu">Menu (opções por setor)</option>
-          <option value="welcome_only">Welcome Only (só boas-vindas)</option>
-        </select>
+      <!-- Etiquetas -->
+      <div class="resource-block">
+        <div class="resource-header" onclick="toggleResource('labels')">
+          <label class="toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="create_labels" checked onchange="syncToggle('labels')" />
+            <span class="toggle-track"></span>
+          </label>
+          <span class="resource-label">Etiquetas</span>
+          <span class="resource-hint">IA gera automaticamente</span>
+        </div>
+        <div class="resource-body" id="labels-body">
+          <label>Instruções para a IA (opcional)</label>
+          <textarea id="labels_description" placeholder="Ex: Quero etiquetas para identificar clientes corporativos e pessoas físicas"></textarea>
+        </div>
       </div>
 
+      <!-- Canal -->
+      <div class="resource-block">
+        <div class="resource-header" onclick="toggleResource('channel')">
+          <label class="toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="create_channel" onchange="syncToggle('channel')" />
+            <span class="toggle-track"></span>
+          </label>
+          <span class="resource-label">Canal WhatsApp</span>
+          <span class="resource-hint">requer leitura de QR Code</span>
+        </div>
+        <div class="resource-body" id="channel-body" style="display:none">
+          <label>Nome do canal</label>
+          <input type="text" id="channel_name" placeholder="Ex: WhatsApp Atendimento" />
+        </div>
+      </div>
+
+      <!-- Chatbot -->
+      <div class="resource-block">
+        <div class="resource-header" onclick="toggleResource('chatbot')">
+          <label class="toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="create_chatbot" checked onchange="syncToggle('chatbot')" />
+            <span class="toggle-track"></span>
+          </label>
+          <span class="resource-label">Chatbot (Flowchart)</span>
+          <span class="resource-hint">bot de atendimento</span>
+        </div>
+        <div class="resource-body" id="chatbot-body">
+          <label>Fluxo padrão</label>
+          <select id="chatbot_flow" style="margin-bottom:10px">
+            <option value="collect">Collect (coleta nome e e-mail)</option>
+            <option value="menu">Menu (opções por setor)</option>
+            <option value="welcome_only">Welcome Only (só boas-vindas)</option>
+          </select>
+          <label>Descreva o chatbot customizado <span style="color:var(--muted);font-weight:400">(sobrepõe o fluxo padrão)</span></label>
+          <textarea id="chatbot_description" style="min-height:90px"
+            placeholder="Ex: Receba o cliente, pergunte se é agendamento ou dúvida, e encaminhe para o setor correto."></textarea>
+        </div>
+      </div>
+
+      <!-- [AI AGENT FEATURE — desabilitada temporariamente]
+      <div class="resource-block">
+        <div class="resource-header" onclick="toggleResource('ai_agent')">
+          <label class="toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="create_ai_agent" onchange="syncToggle('ai_agent')" />
+            <span class="toggle-track"></span>
+          </label>
+          <span class="resource-label">Agente IA</span>
+          <span class="resource-hint">bot automático simples</span>
+        </div>
+        <div class="resource-body" id="ai_agent-body" style="display:none">
+          <label>Tipo de agente</label>
+          <select id="ai_agent_type" style="margin-bottom:10px">
+            <option value="support">Suporte</option>
+            <option value="sales">Vendas</option>
+            <option value="qualification">Qualificação de leads</option>
+          </select>
+          <label>Descreva o agente <span style="color:var(--muted);font-weight:400">(opcional — a IA gera o prompt do agente)</span></label>
+          <textarea id="ai_agent_description" style="min-height:80px"
+            placeholder="Ex: Agente especializado em suporte técnico da nossa ferramenta de WhatsApp. Deve ser objetivo e resolver dúvidas rapidamente."></textarea>
+        </div>
+      </div>
+      -->
+
+      <hr class="section-divider" />
+      <div class="section-label">Membros</div>
+
       <div class="field">
-        <label>Descreva o chatbot customizado <span style="color:var(--muted)">(opcional — sobrepõe o fluxo padrão)</span></label>
-        <textarea id="chatbot_description" style="min-height:100px"
-          placeholder="Ex: Receba o cliente com uma mensagem de boas-vindas, pergunte se é agendamento ou dúvida, e encaminhe para o setor correspondente. Finalize com uma mensagem de despedida."></textarea>
+        <label>Convidar atendentes por e-mail <span style="color:var(--muted);font-weight:400">(opcional — um por linha)</span></label>
+        <textarea id="member_emails" style="min-height:72px" placeholder="atendente1@empresa.com&#10;atendente2@empresa.com"></textarea>
       </div>
 
       <button class="btn" type="submit" id="submit-btn">Iniciar Onboarding</button>
@@ -422,6 +591,21 @@
   if (savedKey) document.getElementById('talk_api_key').value = savedKey;
   if (savedOrg) document.getElementById('organization_id').value = savedOrg;
 
+  function toggleResource(name) {
+    const cb = document.getElementById(`create_${name}`);
+    cb.checked = !cb.checked;
+    syncToggle(name);
+  }
+
+  function syncToggle(name) {
+    const cb = document.getElementById(`create_${name}`);
+    const body = document.getElementById(`${name}-body`);
+    if (body) body.style.display = cb.checked ? '' : 'none';
+  }
+
+  // Init visibility
+  ['sectors', 'labels', 'channel', 'chatbot'].forEach(syncToggle);
+
   document.getElementById('form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -435,27 +619,54 @@
     localStorage.setItem(LS_KEY_ORG, orgId);
 
     const body = {
-      business_name:       document.getElementById('business_name').value.trim(),
-      segment:             document.getElementById('segment').value,
-      goal:                document.getElementById('goal').value.trim(),
-      volume:              document.getElementById('volume').value.trim() || undefined,
-      approach:            document.getElementById('approach').value.trim() || undefined,
-      talk_api_key:        apiKey,
-      organization_id:     orgId,
-      chatbot_flow:        document.getElementById('chatbot_flow').value,
+      business_name:    document.getElementById('business_name').value.trim(),
+      segment:          document.getElementById('segment').value,
+      goal:             document.getElementById('goal').value.trim(),
+      volume:           document.getElementById('volume').value.trim() || undefined,
+      approach:         document.getElementById('approach').value.trim() || undefined,
+      talk_api_key:     apiKey,
+      organization_id:  orgId,
+      // Resource toggles
+      create_sectors:   document.getElementById('create_sectors').checked,
+      create_labels:    document.getElementById('create_labels').checked,
+      create_channel:   document.getElementById('create_channel').checked,
+      create_chatbot:   document.getElementById('create_chatbot').checked,
+      create_ai_agent:  false, // [AI AGENT FEATURE — desabilitada temporariamente]
     };
+
+    const sectorsDesc = document.getElementById('sectors_description').value.trim();
+    if (sectorsDesc) body.sectors_description = sectorsDesc;
+
+    const labelsDesc = document.getElementById('labels_description').value.trim();
+    if (labelsDesc) body.labels_description = labelsDesc;
 
     const channelName = document.getElementById('channel_name').value.trim();
     if (channelName) body.channel_name = channelName;
 
-    const desc = document.getElementById('chatbot_description').value.trim();
-    if (desc) body.chatbot_description = desc;
+    if (body.create_chatbot) {
+      body.chatbot_flow = document.getElementById('chatbot_flow').value;
+      const desc = document.getElementById('chatbot_description').value.trim();
+      if (desc) body.chatbot_description = desc;
+    }
+
+    // [AI AGENT FEATURE — desabilitada temporariamente]
+    // if (body.create_ai_agent) {
+    //   body.ai_agent_type = document.getElementById('ai_agent_type').value;
+    //   const agentDesc = document.getElementById('ai_agent_description').value.trim();
+    //   if (agentDesc) body.ai_agent_description = agentDesc;
+    // }
+
+    const emailsRaw = document.getElementById('member_emails').value.trim();
+    if (emailsRaw) {
+      const emails = emailsRaw.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
+      if (emails.length) body.member_emails = emails;
+    }
 
     // Remove undefined keys
     Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);
 
     const t0 = performance.now();
-    let data, elapsed, isError = false;
+    let data, elapsed;
 
     try {
       const res = await fetch('http://127.0.0.1:8000/onboarding', {
@@ -468,7 +679,6 @@
     } catch (err) {
       elapsed = Math.round(performance.now() - t0);
       data = { status: 'error', errors: [{ step: 'network', error: err.message }] };
-      isError = true;
     }
 
     renderResult(data, elapsed);
@@ -507,6 +717,16 @@
           <div class="value ${data.chatbot_created ? 'bool-true' : 'bool-false'}">
             ${data.chatbot_created ? '✓' : '✗'}
           </div>
+        </div>
+        <div class="counter-card">
+          <div class="label">Agente IA criado</div>
+          <div class="value ${data.ai_agent_created ? 'bool-true' : 'bool-false'}">
+            ${data.ai_agent_created ? '✓' : '✗'}
+          </div>
+        </div>
+        <div class="counter-card">
+          <div class="label">Membros convidados</div>
+          <div class="value">${data.members_invited ?? 0}</div>
         </div>
         <div class="counter-card">
           <div class="label">Canal ID</div>
