@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-export default function CredentialsGate({ onConnect }) {
+export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismissBanner }) {
   const [apiKey, setApiKey] = useState(() => sessionStorage.getItem('talk_api_key') || '')
   const [orgId, setOrgId] = useState(() => sessionStorage.getItem('talk_organization_id') || '')
   const [showKey, setShowKey] = useState(false)
@@ -60,6 +60,18 @@ export default function CredentialsGate({ onConnect }) {
       padding: '24px 16px',
       background: '#141619',
     }}>
+      {sharedConfigBanner && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+          background: '#4C70DA15', borderBottom: '1px solid #4C70DA33',
+          padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ fontSize: 13, color: '#4C70DA' }}>
+            📋 Configuração compartilhada detectada — conecte sua conta para aplicá-la
+          </span>
+          <button onClick={onDismissBanner} style={{ background: 'none', border: 'none', color: '#4C70DA', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 4px' }}>×</button>
+        </div>
+      )}
       {showDemoBadge && (
         <div style={{
           position: 'fixed', top: 12, right: 12, zIndex: 9999,

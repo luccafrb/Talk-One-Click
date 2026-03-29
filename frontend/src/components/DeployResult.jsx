@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import MaturityScore from './MaturityScore'
+import { encodeConfig } from '@/utils/shareConfig'
 
 const TAG_COLOR_HEX = {
   Blue: '#3b82f6', Skyblue: '#38bdf8', Cyan: '#06b6d4', Aquamarine: '#2dd4bf',
@@ -131,11 +132,12 @@ function TimelineItem({ title, detail, badge, pills, delay, isLast, ok }) {
   )
 }
 
-export default function DeployResult({ result, tempoFinal, fromChat, maturityScore, loadingMaturity, credentials, isDemoMode, onReset }) {
+export default function DeployResult({ result, tempoFinal, fromChat, maturityScore, loadingMaturity, credentials, isDemoMode, form, onReset }) {
   const sc = STATUS_CFG[result.status] ?? STATUS_CFG.partial
   const errors = result.errors ?? []
 
   const [showUndoModal, setShowUndoModal] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
   const [undoLoading, setUndoLoading] = useState(false)
   const [undoDone, setUndoDone] = useState(false)
   const [undoToast, setUndoToast] = useState(null)
@@ -459,6 +461,30 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
               Nova configuração
             </button>
           </div>
+
+          {/* Share button */}
+          {form && result.status !== 'error' && (
+            <div style={{ textAlign: 'center', marginTop: 4 }}>
+              <button
+                onClick={() => {
+                  const url = window.location.origin + '?config=' + encodeConfig(form)
+                  navigator.clipboard.writeText(url).then(() => {
+                    setShareCopied(true)
+                    setTimeout(() => setShareCopied(false), 2000)
+                  })
+                }}
+                style={{
+                  background: 'transparent', border: '1px solid #2a2d32', color: shareCopied ? '#22c55e' : '#ACADBD',
+                  borderRadius: 8, fontSize: 13, padding: '8px 16px', cursor: 'pointer',
+                  transition: 'border-color 0.2s, color 0.2s', width: '100%',
+                }}
+                onMouseEnter={e => { if (!shareCopied) { e.currentTarget.style.borderColor = '#4C70DA'; e.currentTarget.style.color = '#4C70DA' } }}
+                onMouseLeave={e => { if (!shareCopied) { e.currentTarget.style.borderColor = '#2a2d32'; e.currentTarget.style.color = '#ACADBD' } }}
+              >
+                {shareCopied ? '✓ Link copiado!' : '🔗 Compartilhar esta configuração'}
+              </button>
+            </div>
+          )}
 
           {/* Undo button */}
           {result.status !== 'error' && (

@@ -18,6 +18,8 @@ import OnboardingTimer from '@/components/OnboardingTimer'
 import DeployResult from '@/components/DeployResult'
 import CredentialsGate from '@/components/CredentialsGate'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
+import { TEMPLATES } from '@/data/templates'
+import { decodeConfig } from '@/utils/shareConfig'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -635,9 +637,39 @@ export default function App() {
   const [showSurpriseModal, setShowSurpriseModal] = useState(false)
   const [surpriseDesc, setSurpriseDesc] = useState('')
   const [surpriseLoading, setSurpriseLoading] = useState(false)
+  const [templateApplied, setTemplateApplied] = useState(false)
+  const [importedBadge, setImportedBadge] = useState(false)
+  const [goalTyping, setGoalTyping] = useState(false)
+
+  // Detect ?config= in URL on first render
+  const [pendingConfig] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const configParam = params.get('config')
+    if (configParam) {
+      window.history.replaceState({}, '', window.location.pathname)
+      return decodeConfig(configParam)
+    }
+    return null
+  })
+  const [sharedConfigBanner, setSharedConfigBanner] = useState(!!pendingConfig)
 
   function setField(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
+  }
+
+  function applyTemplate(tpl) {
+    setForm(f => ({ ...f, approach: tpl.approach, create_sectors: tpl.create_sectors, create_labels: tpl.create_labels, create_chatbot: tpl.create_chatbot, goal: '' }))
+    setTemplateApplied(true)
+    setTimeout(() => setTemplateApplied(false), 3000)
+    // Typing animation for goal
+    setGoalTyping(true)
+    let i = 0
+    const text = tpl.goal
+    const tick = setInterval(() => {
+      i++
+      setForm(f => ({ ...f, goal: text.slice(0, i) }))
+      if (i >= text.length) { clearInterval(tick); setGoalTyping(false) }
+    }, 12)
   }
 
   useEffect(() => {
@@ -821,18 +853,29 @@ export default function App() {
   }
 
   if (status === 'credentials') return (
-    <CredentialsGate onConnect={(apiKey, orgId) => {
-      sessionStorage.setItem('talk_api_key', apiKey)
-      sessionStorage.setItem('talk_organization_id', orgId)
-      setCredentials({ talk_api_key: apiKey, organization_id: orgId })
-      setStatus('select')
-    }} />
+    <CredentialsGate
+      sharedConfigBanner={sharedConfigBanner}
+      onDismissBanner={() => setSharedConfigBanner(false)}
+      onConnect={(apiKey, orgId) => {
+        sessionStorage.setItem('talk_api_key', apiKey)
+        sessionStorage.setItem('talk_organization_id', orgId)
+        setCredentials({ talk_api_key: apiKey, organization_id: orgId })
+        if (pendingConfig) {
+          setForm(f => ({ ...f, ...pendingConfig }))
+          setImportedBadge(true)
+          setTimeout(() => setImportedBadge(false), 4000)
+          setStatus('form')
+        } else {
+          setStatus('select')
+        }
+      }}
+    />
   )
 
 
   if (status === 'transitioning') return <>{demoBadge}<FillingAnimation /></>
   if (status === 'loading') return <>{demoBadge}<OnboardingTimer startTime={startTime ?? Date.now()} /></>
-  if (status === 'result') return <>{demoBadge}<DeployResult result={result} tempoFinal={tempoFinal} fromChat={fromChat} maturityScore={maturityScore} loadingMaturity={loadingMaturity} credentials={credentials} isDemoMode={isDemoMode} onReset={() => { setStatus('select'); setResult(null); setTempoFinal(null); setFromChat(false); setChatMessages(null); setMaturityScore(null); setLoadingMaturity(false) }} /></>
+  if (status === 'result') return <>{demoBadge}<DeployResult result={result} tempoFinal={tempoFinal} fromChat={fromChat} maturityScore={maturityScore} loadingMaturity={loadingMaturity} credentials={credentials} isDemoMode={isDemoMode} form={form} onReset={() => { setStatus('select'); setResult(null); setTempoFinal(null); setFromChat(false); setChatMessages(null); setMaturityScore(null); setLoadingMaturity(false) }} /></>
 
   if (status === 'chat') return (
     <>{demoBadge}<DiscoveryChat
@@ -1064,11 +1107,17 @@ export default function App() {
   return (
     <>
     {demoBadge}
+    <style>{`@keyframes tplFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px 24px' }}>
 
       {/* Cabeçalho — fora do grid, largura total */}
       <div className="space-y-3" style={{ marginBottom: 32 }}>
         <button onClick={() => setStatus('select')} style={{ color: '#FFFFFF', fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 8, display: 'block' }}>← Voltar</button>
+        {importedBadge && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#4C70DA', background: '#4C70DA15', border: '1px solid #4C70DA33', borderRadius: 6, padding: '4px 10px' }}>
+            🔗 Configuração importada
+          </div>
+        )}
         <h1
           className=""
           style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)' }}
@@ -1135,6 +1184,34 @@ export default function App() {
                     <SelectItem value="outro">Outro</SelectItem>
                   </SelectContent>
                 </Select>
+                {/* Template card */}
+                {form.segment && TEMPLATES[form.segment] && (() => {
+                  const tpl = TEMPLATES[form.segment]
+                  return (
+                    <div style={{ marginTop: 8, animation: 'tplFadeIn 0.2s ease both' }}>
+                      {templateApplied && (
+                        <div style={{ fontSize: 11, fontWeight: 600, color: '#4C70DA', marginBottom: 6 }}>
+                          📋 Template aplicado
+                        </div>
+                      )}
+                      <div style={{ background: '#202326', border: '1px solid #2a2d32', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF', margin: '0 0 2px' }}>{tpl.emoji} {tpl.label}</p>
+                          <p style={{ fontSize: 12, color: '#ACADBD', margin: 0, lineHeight: 1.4 }}>{tpl.description}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => applyTemplate(tpl)}
+                          style={{ flexShrink: 0, background: 'transparent', border: '1px solid #4C70DA', color: '#4C70DA', borderRadius: 6, fontSize: 12, padding: '4px 10px', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#4C70DA'; e.currentTarget.style.color = '#FFFFFF' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4C70DA' }}
+                        >
+                          Usar template →
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
 
               <div className="space-y-1.5">
