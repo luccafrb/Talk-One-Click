@@ -254,7 +254,7 @@ async def analytics_report_stream(request: Request, talk_api_key: str, organizat
                    "label": "Conectando à Talk API..."})
 
         # ── Etapa 1: buscar dados (paralelo, cancelável) ─────────────────────
-        # Callback síncrono chamado pela fase 2 de get_chats (amostragem por hora)
+        # Callback síncrono chamado por get_chats a cada página ou dia processado
         _sp = {"done": 0, "total": 0, "active": False}
 
         def on_chat_progress(done: int, total: int) -> None:
@@ -277,8 +277,10 @@ async def analytics_report_stream(request: Request, talk_api_key: str, organizat
             await _asyncio.sleep(0.4)
             if _sp["active"] and _sp["total"] > 0:
                 pct = 10 + (_sp["done"] / _sp["total"]) * 35
-                yield evt({"type": "progress", "pct": round(pct, 1), "step": "fetch",
-                           "label": f"Amostrando período... {_sp['done']}/{_sp['total']} horas"})
+                label = (f"Buscando chats... {_sp['done']}/{_sp['total']}"
+                         if _sp["total"] > days
+                         else f"Amostrando período... dia {_sp['done']}/{_sp['total']}")
+                yield evt({"type": "progress", "pct": round(pct, 1), "step": "fetch", "label": label})
             else:
                 yield evt({"type": "progress", "pct": 10, "step": "fetch",
                            "label": "Buscando conversas..."})

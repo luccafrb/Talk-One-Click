@@ -61,85 +61,84 @@ class TalkClient:
         raise last_error
 
     async def get_chats(self, days: int, on_progress=None) -> list[dict]:
-        """Busca conversas com estratégia de duas fases:
-        1. Até 5.000 chats paginados normalmente.
-        2. Se o limite foi atingido, amostra 10 chats por hora não coberta do período.
-        on_progress(done, total) é chamado a cada hora amostrada na fase 2.
+        """Busca chats fechados com estratégia em duas fases:
+        1. Conta o total via Behavior=CountOnly.
+        2a. Se total ≤ 3000: pagina tudo com progresso real baseado em totalItems.
+        2b. Se total > 3000: amostragem diária uniforme (budget = 3000 / dias).
+        on_progress(done, total) é chamado a cada página ou dia processado.
         """
         from datetime import datetime, timedelta, timezone
 
         now = datetime.now(timezone.utc)
-        start_dt = (now - timedelta(days=days)).replace(minute=0, second=0, microsecond=0)
+        start_dt = now - timedelta(days=days)
         start = start_dt.isoformat()
+        end = now.isoformat()
 
-        # ── Fase 1: até 5.000 conversas ─────────────────────────────────────
-        skip, take, max_chats = 0, 100, 3000
+        total = await self._count_chats(start, end)
+        logger.info("[analytics] total de chats fechados no período: %d", total)
+
+        if total <= 3000:
+            return await self._fetch_all_chats(start, end, total, on_progress)
+        else:
+            return await self._sample_chats_by_day(start_dt, now, days, on_progress)
+
+    async def _count_chats(self, start: str, end: str) -> int:
+        data = await self.get(
+            f"/v1/chats/?ChatState=Closed&Behavior=CountOnly"
+            f"&DateStartCreatedAtUTC={start}&DateEndCreatedAtUTC={end}&Take=1"
+        )
+        page = data.get("page") or data.get("pagination") or {}
+        total = page.get("totalItems", 0)
+        if total == 0:
+            import json as _json
+            logger.info("[analytics] ESTRUTURA DA RESPOSTA DE CONTAGEM:\n%s",
+                        _json.dumps(data, indent=2, ensure_ascii=False, default=str))
+        return total
+
+    async def _fetch_all_chats(self, start: str, end: str, total: int, on_progress) -> list[dict]:
+        skip, take = 0, 100
         results: list[dict] = []
-        hit_limit = False
-
-        logger.info("[analytics] fase 1: buscando até 3.000 conversas — últimos %d dias", days)
-        while len(results) < max_chats:
+        logger.info("[analytics] buscando todos os %d chats fechados", total)
+        while True:
             data = await self.get(
-                f"/v1/chats/?DateStartCreatedAtUTC={start}&Skip={skip}&Take={take}"
+                f"/v1/chats/?ChatState=Closed&Behavior=GetSliceOnly"
+                f"&DateStartCreatedAtUTC={start}&DateEndCreatedAtUTC={end}"
+                f"&ChatOrderBy=CreatedAtUTC&Order=Asc&Skip={skip}&Take={take}"
             )
-            items: list[dict] = data if isinstance(data, list) else data.get("items", data.get("data", []))
-            if skip == 0 and items:
-                import json as _json
-                logger.info("[analytics] ESTRUTURA DO PRIMEIRO CHAT:\n%s",
-                            _json.dumps(items[0], indent=2, ensure_ascii=False, default=str))
+            items: list[dict] = data.get("items", []) if isinstance(data, dict) else data
             results.extend(items)
-            logger.info("[analytics] fase 1 — skip=%d: %d itens (total: %d)", skip, len(items), len(results))
+            logger.info("[analytics] skip=%d: %d itens (total: %d/%d)", skip, len(items), len(results), total)
+            if on_progress and total > 0:
+                on_progress(len(results), total)
             if len(items) < take:
                 break
             skip += take
-            if len(results) >= max_chats:
-                hit_limit = True
-                break
+        return results
 
-        if not hit_limit:
-            logger.info("[analytics] fase 1 concluída: %d conversas (abaixo do limite de 3.000)", len(results))
-            return results
-
-        # ── Fase 2: amostragem por hora das lacunas ──────────────────────────
-        covered: set[tuple] = set()
-        for chat in results:
-            raw = chat.get("eventAtUTC") or chat.get("createdAtUTC")
-            if raw:
-                try:
-                    dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
-                    covered.add((dt.year, dt.month, dt.day, dt.hour))
-                except Exception:
-                    pass
-
-        uncovered: list[datetime] = []
-        cur = start_dt
-        while cur < now:
-            if (cur.year, cur.month, cur.day, cur.hour) not in covered:
-                uncovered.append(cur)
-            cur += timedelta(hours=5)
-
-        total_uncovered = len(uncovered)
-        logger.info("[analytics] fase 2: %d horas sem cobertura para amostrar", total_uncovered)
-
-        sampled: list[dict] = []
-        for i, hour_dt in enumerate(uncovered):
-            window_end = hour_dt + timedelta(hours=5)
+    async def _sample_chats_by_day(self, start_dt, end_dt, days: int, on_progress) -> list[dict]:
+        from datetime import timedelta
+        budget = max(10, 3000 // days)
+        results: list[dict] = []
+        day = start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        all_days = []
+        while day < end_dt:
+            all_days.append(day)
+            day = day + timedelta(days=1)
+        logger.info("[analytics] amostragem diária: %d dias, %d chats/dia", len(all_days), budget)
+        for i, day in enumerate(all_days):
+            day_end = day + timedelta(days=1)
             data = await self.get(
-                f"/v1/chats/?DateStartCreatedAtUTC={hour_dt.isoformat()}"
-                f"&DateEndCreatedAtUTC={window_end.isoformat()}&Skip=0&Take=10"
+                f"/v1/chats/?ChatState=Closed&Behavior=GetSliceOnly"
+                f"&DateStartCreatedAtUTC={day.isoformat()}&DateEndCreatedAtUTC={day_end.isoformat()}"
+                f"&ChatOrderBy=CreatedAtUTC&Order=Asc&Skip=0&Take={budget}"
             )
-            items = data if isinstance(data, list) else data.get("items", data.get("data", []))
-            sampled.extend(items)
-            if items:
-                logger.info("[analytics] fase 2 — %s a %s: %d chats amostrados",
-                            hour_dt.strftime("%Y-%m-%d %H:00"),
-                            window_end.strftime("%H:00"), len(items))
-            if on_progress is not None:
-                on_progress(i + 1, total_uncovered)
-
-        logger.info("[analytics] amostragem concluída: %d chats adicionais. total final: %d",
-                    len(sampled), len(results) + len(sampled))
-        return results + sampled
+            items: list[dict] = data.get("items", []) if isinstance(data, dict) else data
+            results.extend(items)
+            logger.info("[analytics] %s: %d chats amostrados", day.strftime("%Y-%m-%d"), len(items))
+            if on_progress:
+                on_progress(i + 1, len(all_days))
+        logger.info("[analytics] amostragem concluída: %d chats no total", len(results))
+        return results
 
     async def get_ratings(self, days: int) -> list[dict]:
         """Fetch all contact ratings for the last N days with automatic pagination."""
