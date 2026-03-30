@@ -490,7 +490,7 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
   const footerDelay = errorsDelay + (errors.length > 0 ? 0.5 : 0.15)
 
   return (
-    <div style={{ minHeight: '100svh', background: '#141619', display: 'flex', justifyContent: 'center', padding: '40px 24px 64px' }}>
+    <div style={{ height: '100svh', background: '#141619', display: 'flex', justifyContent: 'center', padding: '0 24px', overflow: 'hidden' }}>
       <style>{`
         @keyframes drHeaderIn {
           from { opacity: 0; transform: translateY(-4px); }
@@ -520,150 +520,159 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
         }
       `}</style>
 
-      <div style={{ width: '100%', maxWidth: 640 }}>
+      <div style={{ width: '100%', maxWidth: 540, height: '100%', display: 'flex', flexDirection: 'column', paddingTop: 80, paddingBottom: 24, boxSizing: 'border-box' }}>
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: 4 }}>
 
-        {/* Header */}
-        <div style={{
-          background: '#1A1C20', border: `1px solid #2A2D32`,
-          borderLeft: `4px solid ${sc.color}`,
-          borderRadius: 8, padding: '20px 24px', marginBottom: 32,
-          display: 'flex', alignItems: 'center', gap: 16,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-          animation: 'drHeaderIn 0.3s ease-out both',
-        }}>
-          <StatusCircle color={sc.color} icon={sc.icon} />
-          <div style={{ flex: 1 }}>
-            <h1 style={{
-              fontSize: 16, fontWeight: 600, color: '#FFFFFF', margin: '0 0 2px 0',
-              fontFamily: "'Inter', sans-serif", letterSpacing: '-0.01em',
-            }}>
-              {sc.title}
-            </h1>
-            <p style={{ fontSize: 13, color: '#8E92A4', margin: 0 }}>
-              {result.status !== 'error' && tempoFinal ? (
-                <>
-                  Configurado em{' '}
-                  <span style={{ fontWeight: 600, color: '#FFFFFF' }}>{tempoFinal}s</span>
-                  {result.status === 'partial' && errors.length > 0 && (
-                    <> · <span style={{ color: '#f59e0b' }}>{errors.length} aviso(s)</span></>
-                  )}
-                </>
-              ) : (
-                'Verifique os erros abaixo'
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div style={{ marginBottom: 24 }}>
-          {items.map((item, i) => (
-            <TimelineItem key={item.title} {...item} isLast={i === items.length - 1} />
-          ))}
-        </div>
-
-        {/* Aviso de ativação do chatbot */}
-        {result.chatbot_created && (
+          {/* Header */}
           <div style={{
-            marginBottom: 16, opacity: 0,
-            animation: `drFadeUp 0.35s ease ${errorsDelay}s both`,
-            borderRadius: 10, padding: '14px 16px',
-            background: 'rgba(245,158,11,0.07)',
-            borderTop: '1px solid rgba(245,158,11,0.2)',
-            borderRight: '1px solid rgba(245,158,11,0.2)',
-            borderBottom: '1px solid rgba(245,158,11,0.2)',
-            borderLeft: '3px solid #f59e0b',
-            display: 'flex', gap: 12, alignItems: 'flex-start',
+            background: '#1A1C20', border: `1px solid #2A2D32`,
+            borderLeft: `4px solid ${sc.color}`,
+            borderRadius: 8, padding: '20px 24px', marginBottom: 32,
+            display: 'flex', alignItems: 'center', gap: 16,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            animation: 'drHeaderIn 0.3s ease-out both',
           }}>
-            <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>⚠️</span>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', margin: '0 0 6px' }}>
-                Ative o chatbot conectando um número
+            <StatusCircle color={sc.color} icon={sc.icon} />
+            <div style={{ flex: 1 }}>
+              <h1 style={{
+                fontSize: 16, fontWeight: 600, color: '#FFFFFF', margin: '0 0 2px 0',
+                fontFamily: "'Inter', sans-serif", letterSpacing: '-0.01em',
+              }}>
+                {sc.title}
+              </h1>
+              <p style={{ fontSize: 13, color: '#8E92A4', margin: 0 }}>
+                {result.status !== 'error' && tempoFinal ? (
+                  <>
+                    Configurado em{' '}
+                    <span style={{ fontWeight: 600, color: '#FFFFFF' }}>{tempoFinal}s</span>
+                    {result.status === 'partial' && errors.length > 0 && (
+                      <> · <span style={{ color: '#f59e0b' }}>{errors.length} aviso(s)</span></>
+                    )}
+                  </>
+                ) : (
+                  'Verifique os erros abaixo'
+                )}
               </p>
-              <p style={{ fontSize: 13, color: '#ACADBD', margin: '0 0 6px', lineHeight: 1.6 }}>
-                O chatbot foi criado, mas ainda não está conectado a nenhum número. Para ativá-lo:
-              </p>
-              <ol style={{ fontSize: 13, color: '#ACADBD', margin: 0, paddingLeft: 18, lineHeight: 1.8 }}>
-                <li>
-                  Acesse{' '}
-                  <a
-                    href="https://app-utalk.umbler.com/settings/channels"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: '#4C70DA', textDecoration: 'underline' }}
-                  >
-                    Configurações → Canais
-                  </a>
-                  {', clique em '}
-                  <strong style={{ color: '#FFFFFF' }}>Sincronizar</strong>
-                  {' e leia o QR Code com o WhatsApp desejado'}
-                </li>
-                <li>
-                  Abra o chatbot criado e adicione o canal no bloco{' '}
-                  <strong style={{ color: '#FFFFFF' }}>"Iniciar por um canal"</strong>
-                </li>
-              </ol>
             </div>
           </div>
-        )}
 
-        {/* Errors detail */}
-        {errors.length > 0 && (
-          <div style={{ marginBottom: 28, opacity: 0, animation: `drFadeUp 0.35s ease ${errorsDelay}s both` }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', marginBottom: 10 }}>
-              Detalhes dos avisos
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {errors.map((err, i) => (
-                <div key={i} style={{
-                  borderRadius: 8, padding: '10px 14px',
-                  background: '#1a1d21',
-                  borderTop: '1px solid rgba(239,68,68,0.18)',
-                  borderRight: '1px solid rgba(239,68,68,0.18)',
-                  borderBottom: '1px solid rgba(239,68,68,0.18)',
-                  borderLeft: '3px solid #ef4444',
-                }}>
-                  <p style={{ fontSize: 12, color: '#ACADBD', margin: '0 0 4px' }}>Etapa: {err.step}</p>
-                  <p style={{ fontSize: 13, color: '#FFFFFF', margin: 0 }}>{err.error}</p>
-                </div>
-              ))}
+          {/* Timeline */}
+          <div style={{ marginBottom: 24 }}>
+            {items.map((item, i) => (
+              <TimelineItem key={item.title} {...item} isLast={i === items.length - 1} />
+            ))}
+          </div>
+
+          {/* Aviso de ativação do chatbot */}
+          {result.chatbot_created && (
+            <div style={{
+              marginBottom: 16, opacity: 0,
+              animation: `drFadeUp 0.35s ease ${errorsDelay}s both`,
+              borderRadius: 10, padding: '14px 16px',
+              background: 'rgba(245,158,11,0.07)',
+              borderTop: '1px solid rgba(245,158,11,0.2)',
+              borderRight: '1px solid rgba(245,158,11,0.2)',
+              borderBottom: '1px solid rgba(245,158,11,0.2)',
+              borderLeft: '3px solid #f59e0b',
+              display: 'flex', gap: 12, alignItems: 'flex-start',
+            }}>
+              <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>⚠️</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', margin: '0 0 6px' }}>
+                  Ative o chatbot conectando um número
+                </p>
+                <p style={{ fontSize: 13, color: '#ACADBD', margin: '0 0 6px', lineHeight: 1.6 }}>
+                  O chatbot foi criado, mas ainda não está conectado a nenhum número. Para ativá-lo:
+                </p>
+                <ol style={{ fontSize: 13, color: '#ACADBD', margin: 0, paddingLeft: 18, lineHeight: 1.8 }}>
+                  <li>
+                    Acesse{' '}
+                    <a
+                      href="https://app-utalk.umbler.com/settings/channels"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: '#4C70DA', textDecoration: 'underline' }}
+                    >
+                      Configurações → Canais
+                    </a>
+                    {', clique em '}
+                    <strong style={{ color: '#FFFFFF' }}>Sincronizar</strong>
+                    {' e leia o QR Code com o WhatsApp desejado'}
+                  </li>
+                  <li>
+                    Abra o chatbot criado e adicione o canal no bloco{' '}
+                    <strong style={{ color: '#FFFFFF' }}>"Iniciar por um canal"</strong>
+                  </li>
+                </ol>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Footer */}
-        <div style={{ opacity: 0, animation: `drFadeUp 0.35s ease ${footerDelay}s both` }}>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-            <a
-              href="https://app-utalk.umbler.com"
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                flex: 1, padding: '10px', borderRadius: 6, textAlign: 'center',
-                background: '#4C70DA', color: '#FFFFFF', fontWeight: 500, fontSize: 13,
-                textDecoration: 'none', display: 'block',
-              }}
-            >
-              Acessar Talk
-            </a>
-            <button
-              onClick={onReset}
-              style={{
-                flex: 1, padding: '10px', borderRadius: 6,
-                background: 'transparent', color: '#E0E2E6', fontWeight: 500, fontSize: 13,
-                border: '1px solid #2A2D32', cursor: 'pointer',
-                transition: 'border-color 0.2s, background 0.2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#33363c'; e.currentTarget.style.background = '#2A2D32' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2D32'; e.currentTarget.style.background = 'transparent' }}
-            >
-              Nova configuração
-            </button>
-          </div>
+          {/* Errors detail */}
+          {errors.length > 0 && (
+            <div style={{ marginBottom: 28, opacity: 0, animation: `drFadeUp 0.35s ease ${errorsDelay}s both` }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', marginBottom: 10 }}>
+                Detalhes dos avisos
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {errors.map((err, i) => (
+                  <div key={i} style={{
+                    borderRadius: 8, padding: '10px 14px',
+                    background: '#1a1d21',
+                    borderTop: '1px solid rgba(239,68,68,0.18)',
+                    borderRight: '1px solid rgba(239,68,68,0.18)',
+                    borderBottom: '1px solid rgba(239,68,68,0.18)',
+                    borderLeft: '3px solid #ef4444',
+                  }}>
+                    <p style={{ fontSize: 12, color: '#ACADBD', margin: '0 0 4px' }}>Etapa: {err.step}</p>
+                    <p style={{ fontSize: 13, color: '#FFFFFF', margin: 0 }}>{err.error}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Simulador de conversa */}
+          {result.chatbot_created && (
+            <div style={{ marginTop: 24, opacity: 0, animation: `drFadeUp 0.35s ease ${footerDelay}s both` }}>
+              <ConversationSimulator result={result} form={form} isDemoMode={isDemoMode} />
+            </div>
+          )}
+
+          {loadingMaturity && !maturityScore && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              padding: '16px', marginTop: 24, background: 'var(--talk-bg-secondary)', borderRadius: 12,
+              border: '1px solid var(--talk-border)',
+              opacity: 0, animation: `drFadeUp 0.35s ease ${footerDelay}s both`
+            }}>
+              <div style={{
+                width: 16, height: 16, borderRadius: '50%',
+                border: '2px solid var(--talk-accent)', borderTopColor: 'transparent',
+                animation: 'drSpin 0.8s linear infinite', flexShrink: 0,
+              }} />
+              <p style={{ fontSize: 13, color: 'var(--talk-text-muted)', margin: 0 }}>
+                Gerando diagnóstico de maturidade...
+              </p>
+            </div>
+          )}
+          {maturityScore && (
+            <div style={{ animation: `drFadeUp 0.4s ease ${footerDelay}s both`, marginTop: 24 }}>
+              <MaturityScore
+                score={maturityScore.score}
+                nivel={maturityScore.nivel}
+                resumo={maturityScore.resumo}
+                pontos_fortes={maturityScore.pontos_fortes}
+                oportunidades={maturityScore.oportunidades}
+                proximo_passo={maturityScore.proximo_passo}
+                tempoFinal={tempoFinal}
+              />
+            </div>
+          )}
 
           {/* Share button */}
           {form && result.status !== 'error' && (
-            <div style={{ textAlign: 'center', marginTop: 4 }}>
+            <div style={{ textAlign: 'center', marginTop: 24, opacity: 0, animation: `drFadeUp 0.35s ease ${footerDelay}s both` }}>
               <button
                 onClick={() => {
                   const url = window.location.origin + '?config=' + encodeConfig(form)
@@ -687,7 +696,7 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
 
           {/* Undo button */}
           {result.status !== 'error' && (
-            <div style={{ textAlign: 'center', marginTop: 8 }}>
+            <div style={{ textAlign: 'center', marginTop: 12, opacity: 0, animation: `drFadeUp 0.35s ease ${footerDelay}s both` }}>
               {undoDone ? (
                 <span style={{ fontSize: 12, color: '#22c55e' }}>✓ Desfeito</span>
               ) : (
@@ -696,12 +705,12 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
                   disabled={undoLoading}
                   style={{
                     background: 'none', border: 'none', cursor: undoLoading ? 'not-allowed' : 'pointer',
-                    color: undoLoading ? '#6b7280' : '#ACADBD', fontSize: 12,
+                    color: undoLoading ? '#6b7280' : '#8E92A4', fontSize: 12,
                     padding: '4px 8px', transition: 'color 0.2s ease',
                     display: 'inline-flex', alignItems: 'center', gap: 4,
                   }}
                   onMouseEnter={e => { if (!undoLoading) e.currentTarget.style.color = '#ef4444' }}
-                  onMouseLeave={e => { if (!undoLoading) e.currentTarget.style.color = '#ACADBD' }}
+                  onMouseLeave={e => { if (!undoLoading) e.currentTarget.style.color = '#8E92A4' }}
                 >
                   {undoLoading ? (
                     <>
@@ -713,41 +722,39 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
               )}
             </div>
           )}
+          
+          <div style={{ height: 24 }} />
+        </div>
 
-          {/* Simulador de conversa */}
-          {result.chatbot_created && (
-            <ConversationSimulator result={result} form={form} isDemoMode={isDemoMode} />
-          )}
-
-          {loadingMaturity && !maturityScore && (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              padding: '16px', background: 'var(--talk-bg-secondary)', borderRadius: 12,
-              border: '1px solid var(--talk-border)',
-            }}>
-              <div style={{
-                width: 16, height: 16, borderRadius: '50%',
-                border: '2px solid var(--talk-accent)', borderTopColor: 'transparent',
-                animation: 'drSpin 0.8s linear infinite', flexShrink: 0,
-              }} />
-              <p style={{ fontSize: 13, color: 'var(--talk-text-muted)', margin: 0 }}>
-                Gerando diagnóstico de maturidade...
-              </p>
-            </div>
-          )}
-          {maturityScore && (
-            <div style={{ animation: 'drFadeUp 0.4s ease both' }}>
-              <MaturityScore
-                score={maturityScore.score}
-                nivel={maturityScore.nivel}
-                resumo={maturityScore.resumo}
-                pontos_fortes={maturityScore.pontos_fortes}
-                oportunidades={maturityScore.oportunidades}
-                proximo_passo={maturityScore.proximo_passo}
-                tempoFinal={tempoFinal}
-              />
-            </div>
-          )}
+        {/* Bottom navigation fixed */}
+        <div style={{ display: 'flex', gap: 12, marginTop: 16, flexShrink: 0, opacity: 0, animation: `drFadeUp 0.35s ease ${footerDelay}s both` }}>
+          <button
+            onClick={onReset}
+            style={{
+              flex: 1, padding: '13px', borderRadius: 8, fontWeight: 500, fontSize: 14,
+              background: 'transparent', color: '#E0E2E6', border: '1px solid #2A2D32', cursor: 'pointer',
+              transition: 'border-color 0.2s, background 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#1A1C20' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+          >
+            Nova configuração
+          </button>
+          <a
+            href="https://app-utalk.umbler.com"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              flex: 2, padding: '13px', borderRadius: 8, fontWeight: 700, fontSize: 14,
+              background: '#4C70DA', color: '#FFFFFF', border: 'none', cursor: 'pointer',
+              transition: 'background 0.15s', textAlign: 'center', textDecoration: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#3d5ec4' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#4C70DA' }}
+          >
+            Acessar Talk 🚀
+          </a>
         </div>
 
       </div>

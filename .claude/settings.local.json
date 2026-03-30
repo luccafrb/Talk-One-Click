@@ -79,7 +79,8 @@
       "Bash(powershell -Command \"Get-Process -Id 6192,17952,20668 -ErrorAction SilentlyContinue | Select-Object Id,Name,MainWindowTitle,Path | Format-Table -AutoSize\")",
       "Bash(find /c/hackathon/talk_one_click -maxdepth 1 -type f \\\\\\(-name *.json -o -name *.yaml -o -name *.yml -o -name *.md -o -name *.txt -o -name *.lock -o -name .env* -o -name dockerfile* -o -name requirements* \\\\\\))",
       "Bash(find . -name \"*.py\" -type f ! -path \"./frontend/*\" ! -path \"./.vite/*\" ! -path \"./.pytest_cache/*\" ! -path \"*/__pycache__/*\" -exec grep -l \"def\\\\|class\" {})",
-      "Bash(ls -la /c/hackathon/talk_one_click/frontend/*.json /c/hackathon/talk_one_click/frontend/*.js)"
+      "Bash(ls -la /c/hackathon/talk_one_click/frontend/*.json /c/hackathon/talk_one_click/frontend/*.js)",
+      "Bash(node:*)"
     ]
   }
 }
