@@ -99,10 +99,11 @@ class TalkClient:
         return total
 
     async def _fetch_all_chats(self, start: str, end: str, total: int, on_progress) -> list[dict]:
+        cap = max(total, 3000)  # nunca buscar mais que o necessário
         skip, take = 0, 100
         results: list[dict] = []
-        logger.info("[analytics] buscando todos os %d chats fechados", total)
-        while True:
+        logger.info("[analytics] buscando até %d chats fechados", cap)
+        while len(results) < cap:
             data = await self.get(
                 f"/v1/chats/?ChatState=Closed&Behavior=GetSliceOnly"
                 f"&DateStartCreatedAtUTC={start}&DateEndCreatedAtUTC={end}"
@@ -110,9 +111,9 @@ class TalkClient:
             )
             items: list[dict] = data.get("items", []) if isinstance(data, dict) else data
             results.extend(items)
-            logger.info("[analytics] skip=%d: %d itens (total: %d/%d)", skip, len(items), len(results), total)
-            if on_progress and total > 0:
-                on_progress(len(results), total)
+            logger.info("[analytics] skip=%d: %d itens (total: %d/%d)", skip, len(items), len(results), cap)
+            if on_progress and cap > 0:
+                on_progress(min(len(results), cap), cap)
             if len(items) < take:
                 break
             skip += take
