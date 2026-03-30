@@ -230,6 +230,79 @@ async def analytics_report(request: AnalyticsRequest) -> AnalyticsResult:
     )
 
 
+@app.get("/analytics/report/stream")
+async def analytics_report_stream(talk_api_key: str, organization_id: str, days: int = 15):
+    import json as _json
+    from fastapi.responses import StreamingResponse
+
+    async def _generate():
+        from client.talk_client import TalkClient as _TalkClient
+        client = _TalkClient(talk_api_key, organization_id)
+        errors: list = []
+
+        def evt(payload: dict) -> str:
+            return f"data: {_json.dumps(payload)}\n\n"
+
+        yield evt({"type": "progress", "pct": 5, "step": "fetch",
+                   "label": "Conectando à Talk API..."})
+
+        # ── Etapa 1: buscar dados (paralelo) ────────────────────────────────
+        try:
+            chats, ratings, members = await _asyncio.gather(
+                client.get_chats(days),
+                client.get_ratings(days),
+                client.get_online_members(),
+            )
+        except Exception as e:
+            errors.append({"step": "fetch", "error": str(e)})
+            yield evt({"type": "error", "step": "fetch", "message": str(e)})
+            return
+
+        yield evt({"type": "progress", "pct": 45, "step": "fetch",
+                   "label": f"{len(chats)} conversas e {len(ratings)} avaliações carregadas"})
+
+        # ── Etapa 2: processar métricas ──────────────────────────────────────
+        processor = AnalyticsProcessor(chats, ratings, members)
+        kpis    = processor.compute_kpis()
+        volume  = processor.volume_series()
+        heatmap = processor.hourly_heatmap()
+        agents  = processor.agent_ranking()
+        tags    = processor.tag_distribution()
+        channels = processor.channel_distribution()
+        bots    = processor.bot_stats()
+
+        yield evt({"type": "progress", "pct": 60, "step": "process",
+                   "label": "Métricas calculadas"})
+
+        # ── Etapa 3: insights com IA ─────────────────────────────────────────
+        yield evt({"type": "progress", "pct": 65, "step": "ai",
+                   "label": "Gerando insights com IA..."})
+        insights: list = []
+        try:
+            insights = await generate_insights(kpis, heatmap, agents, tags, bots, days)
+        except Exception as e:
+            errors.append({"step": "insights", "error": str(e)})
+
+        yield evt({"type": "progress", "pct": 95, "step": "render",
+                   "label": "Finalizando relatório..."})
+
+        # ── Resultado final ──────────────────────────────────────────────────
+        result = AnalyticsResult(
+            status="ok" if not errors else "partial",
+            kpis=kpis, volume_series=volume, hourly_heatmap=heatmap,
+            agent_ranking=agents, tag_distribution=tags,
+            channel_distribution=channels, bot_stats=bots,
+            insights=insights, errors=errors,
+        )
+        yield evt({"type": "done", "data": result.model_dump()})
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @app.get("/analytics/export/pdf")
 async def analytics_export_pdf(talk_api_key: str, organization_id: str, days: int = 15):
     from fastapi.responses import Response as _Response

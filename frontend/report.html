@@ -949,7 +949,7 @@
     // ── Progress Bar ─────────────────────────────────────────────────────────
 
     const STEPS = ['fetch', 'process', 'ai', 'render'];
-    let _progressTimer = null;
+    let _activeEs = null;
 
     function setProgress(pct, label, activeStep) {
       document.getElementById('progress-fill').style.width = pct + '%';
@@ -963,8 +963,20 @@
       });
     }
 
+    function resetProgress() {
+      const fill = document.getElementById('progress-fill');
+      fill.style.width = '0%';
+      fill.classList.remove('done', 'error');
+      document.getElementById('progress-pct').textContent = '0%';
+      document.getElementById('progress-label').textContent = 'Iniciando...';
+      STEPS.forEach(s => {
+        const el = document.getElementById('step-' + s);
+        el.classList.remove('active', 'done', 'step-error');
+      });
+      document.getElementById('progress-bar-wrap').classList.add('visible');
+    }
+
     function progressDone() {
-      clearInterval(_progressTimer);
       const fill = document.getElementById('progress-fill');
       fill.style.width = '100%';
       fill.classList.add('done');
@@ -977,11 +989,10 @@
       });
       setTimeout(() => {
         document.getElementById('progress-bar-wrap').classList.remove('visible');
-      }, 900);
+      }, 1000);
     }
 
     function progressError(stepId) {
-      clearInterval(_progressTimer);
       const fill = document.getElementById('progress-fill');
       fill.classList.add('error');
       document.getElementById('progress-label').textContent = 'Falha no carregamento';
@@ -990,40 +1001,6 @@
         el.classList.remove('active');
         el.classList.add('step-error');
       }
-    }
-
-    function startProgressSimulation() {
-      // Simula avanço enquanto aguarda o servidor:
-      // 0–25%  → buscando conversas (fase mais longa)
-      // 25–60% → processando métricas
-      // 60–85% → IA gerando insights
-      // 85–95% → aguardando resposta final
-      const stages = [
-        { until: 25, step: 'fetch',   label: 'Buscando conversas e avaliações...',   tickMs: 120, inc: 0.5 },
-        { until: 60, step: 'process', label: 'Processando métricas de atendimento...', tickMs: 80,  inc: 0.7 },
-        { until: 85, step: 'ai',      label: 'Gerando insights com IA...',            tickMs: 100, inc: 0.4 },
-        { until: 95, step: 'render',  label: 'Aguardando resposta do servidor...',    tickMs: 200, inc: 0.2 },
-      ];
-      let pct = 0;
-      let stageIdx = 0;
-
-      clearInterval(_progressTimer);
-
-      function tick() {
-        const s = stages[stageIdx];
-        if (!s) return;
-        pct = Math.min(pct + s.inc, s.until);
-        setProgress(pct, s.label, s.step);
-        if (pct >= s.until && stageIdx < stages.length - 1) {
-          stageIdx++;
-          clearInterval(_progressTimer);
-          _progressTimer = setInterval(tick, stages[stageIdx].tickMs);
-        }
-      }
-
-      setProgress(0, stages[0].label, stages[0].step);
-      document.getElementById('progress-bar-wrap').classList.add('visible');
-      _progressTimer = setInterval(tick, stages[0].tickMs);
     }
 
     // ── Skeleton / Content toggling ──────────────────────────────────────────
@@ -1048,47 +1025,54 @@
       document.getElementById('error-message').textContent = msg;
     }
 
-    // ── Load Report ──────────────────────────────────────────────────────────
+    // ── Load Report via SSE ──────────────────────────────────────────────────
 
-    async function loadReport(days) {
+    function loadReport(days) {
       const { apiKey, orgId } = getCredentials();
       currentDays = days;
 
+      // Fecha conexão anterior se existir
+      if (_activeEs) { _activeEs.close(); _activeEs = null; }
+
       showSkeleton();
-      startProgressSimulation();
+      resetProgress();
 
-      try {
-        const res = await fetch(`${API}/analytics/report`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            talk_api_key: apiKey,
-            organization_id: orgId,
-            days: days
-          })
-        });
+      const url = `${API}/analytics/report/stream` +
+        `?talk_api_key=${encodeURIComponent(apiKey)}` +
+        `&organization_id=${encodeURIComponent(orgId)}` +
+        `&days=${days}`;
 
-        if (!res.ok) {
-          let errMsg = `HTTP ${res.status}`;
-          try {
-            const errData = await res.json();
-            errMsg = errData.detail || errData.message || errMsg;
-          } catch (_) {}
-          progressError('fetch');
-          throw new Error(errMsg);
+      const es = new EventSource(url);
+      _activeEs = es;
+
+      es.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
+
+        if (msg.type === 'progress') {
+          setProgress(msg.pct, msg.label, msg.step);
+
+        } else if (msg.type === 'error') {
+          progressError(msg.step || null);
+          showError(msg.message || 'Erro no servidor.');
+          es.close();
+
+        } else if (msg.type === 'done') {
+          reportData = msg.data;
+          setProgress(95, 'Renderizando dashboard...', 'render');
+          renderAll(reportData);
+          progressDone();
+          showContent();
+          es.close();
         }
+      };
 
-        reportData = await res.json();
-
-        setProgress(95, 'Renderizando dashboard...', 'render');
-        renderAll(reportData);
-        progressDone();
-        showContent();
-
-      } catch (err) {
+      es.onerror = () => {
+        if (es.readyState === EventSource.CLOSED) return; // fechou normalmente
         progressError(null);
-        showError(err.message || 'Falha ao conectar com o servidor.');
-      }
+        showError('Falha ao conectar com o servidor.');
+        es.close();
+      };
     }
 
     // ── Render All ───────────────────────────────────────────────────────────
