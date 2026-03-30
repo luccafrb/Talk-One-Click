@@ -164,3 +164,22 @@ class UndoResult(BaseModel):
     deleted_labels: int = 0
     deleted_chatbot: bool = False
     errors: list[StepError] = Field(default_factory=list)
+
+
+class AnalyticsRequest(BaseModel):
+    talk_api_key: str
+    organization_id: str
+    days: int = 15
+
+
+class AnalyticsResult(BaseModel):
+    status: OnboardingStatus
+    kpis: dict = Field(default_factory=dict)
+    volume_series: list[dict] = Field(default_factory=list)
+    hourly_heatmap: list[dict] = Field(default_factory=list)
+    agent_ranking: list[dict] = Field(default_factory=list)
+    tag_distribution: list[dict] = Field(default_factory=list)
+    channel_distribution: list[dict] = Field(default_factory=list)
+    bot_stats: dict = Field(default_factory=dict)
+    insights: list[dict] = Field(default_factory=list)
+    errors: list[StepError] = Field(default_factory=list)

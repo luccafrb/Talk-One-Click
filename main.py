@@ -173,6 +173,80 @@ async def chat_demo(request: DemoChatRequest):
     return _DEMO_STEPS[step]
 
 
+# ── Analytics ─────────────────────────────────────────────────────────────────
+
+import asyncio as _asyncio
+
+from models import AnalyticsRequest, AnalyticsResult
+from modules.analytics_processor import AnalyticsProcessor
+from ai.ai_insights import generate_insights
+from modules.pdf_exporter import export_report_pdf
+
+
+@app.post("/analytics/report", response_model=AnalyticsResult)
+async def analytics_report(request: AnalyticsRequest) -> AnalyticsResult:
+    from client.talk_client import TalkClient as _TalkClient
+    client = _TalkClient(request.talk_api_key, request.organization_id)
+    errors: list = []
+
+    try:
+        chats, ratings, members = await _asyncio.gather(
+            client.get_chats(request.days),
+            client.get_ratings(request.days),
+            client.get_online_members(),
+        )
+    except Exception as e:
+        errors.append({"step": "fetch", "error": str(e)})
+        return AnalyticsResult(status="error", errors=errors)
+
+    processor = AnalyticsProcessor(chats, ratings, members)
+
+    kpis = processor.compute_kpis()
+    volume = processor.volume_series()
+    heatmap = processor.hourly_heatmap()
+    agents = processor.agent_ranking()
+    tags = processor.tag_distribution()
+    channels = processor.channel_distribution()
+    bots = processor.bot_stats()
+
+    insights: list = []
+    try:
+        insights = await generate_insights(kpis, heatmap, agents, tags, bots, request.days)
+    except Exception as e:
+        errors.append({"step": "insights", "error": str(e)})
+
+    status = "ok" if not errors else "partial"
+    return AnalyticsResult(
+        status=status,
+        kpis=kpis,
+        volume_series=volume,
+        hourly_heatmap=heatmap,
+        agent_ranking=agents,
+        tag_distribution=tags,
+        channel_distribution=channels,
+        bot_stats=bots,
+        insights=insights,
+        errors=errors,
+    )
+
+
+@app.get("/analytics/export/pdf")
+async def analytics_export_pdf(talk_api_key: str, organization_id: str, days: int = 15):
+    from fastapi.responses import Response as _Response
+    req = AnalyticsRequest(talk_api_key=talk_api_key, organization_id=organization_id, days=days)
+    result = await analytics_report(req)
+    data = result.model_dump()
+    try:
+        pdf_bytes = export_report_pdf(data)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+    return _Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=relatorio-atendimento.pdf"},
+    )
+
+
 @app.post("/onboarding/undo")
 async def onboarding_undo(request: UndoRequest):
     from client.talk_client import TalkClient

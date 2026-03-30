@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; color: #1a1a2e; background: #fff; padding: 32px; }
+  h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+  h2 { font-size: 14px; font-weight: 600; color: #333; margin: 24px 0 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
+  .subtitle { color: #6b7280; font-size: 12px; margin-bottom: 24px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .kpi-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; }
+  .kpi-label { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+  .kpi-value { font-size: 20px; font-weight: 700; color: #111; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  th { font-size: 11px; font-weight: 600; color: #6b7280; text-align: left; padding: 8px 10px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
+  .tag-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .tag-name { width: 140px; font-size: 12px; color: #374151; }
+  .tag-bar-bg { flex: 1; background: #e5e7eb; border-radius: 3px; height: 8px; }
+  .tag-bar-fill { background: #4C70DA; border-radius: 3px; height: 8px; }
+  .tag-count { font-size: 11px; color: #6b7280; width: 30px; text-align: right; }
+  .bot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .bot-card { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px; text-align: center; }
+  .bot-value { font-size: 22px; font-weight: 700; color: #1d4ed8; }
+  .bot-label { font-size: 11px; color: #3b82f6; margin-top: 2px; }
+  .insight { display: flex; gap: 10px; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; }
+  .insight-warning { background: #fffbeb; border-left: 3px solid #f59e0b; }
+  .insight-danger  { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .insight-success { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .insight-info    { background: #eff6ff; border-left: 3px solid #3b82f6; }
+  .insight-icon { font-size: 16px; flex-shrink: 0; }
+  .insight-title { font-weight: 600; font-size: 12px; color: #111; margin-bottom: 2px; }
+  .insight-desc { font-size: 11px; color: #374151; margin-bottom: 4px; }
+  .insight-rec { font-size: 11px; color: #6b7280; font-style: italic; }
+  .insight-metric { font-size: 11px; font-weight: 600; color: #4C70DA; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<h1>Relatório de Atendimento</h1>
+<p class="subtitle">Período: últimos {{ kpis.get('days', '?') }} dias · Gerado em {% set now = '' %}{{ kpis.get('generated_at', '') }}</p>
+
+<h2>KPIs Principais</h2>
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">Total de conversas</div>
+    <div class="kpi-value">{{ kpis.get('total_conversations', 0) }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Aguardando agora</div>
+    <div class="kpi-value">{{ kpis.get('waiting_now', 0) }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Taxa de resolução</div>
+    <div class="kpi-value">{{ "%.0f"|format(kpis.get('resolution_rate', 0) * 100) }}%</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Agentes ativos</div>
+    <div class="kpi-value">{{ kpis.get('active_agents', 0) }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">TMP médio</div>
+    <div class="kpi-value">{{ "%.0f"|format(kpis.get('avg_wait_time_seconds', 0) / 60) }}min</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">1ª resposta média</div>
+    <div class="kpi-value">{{ "%.0f"|format(kpis.get('avg_first_response_seconds', 0) / 60) }}min</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">CSAT médio</div>
+    <div class="kpi-value">{% if kpis.get('avg_csat') %}{{ "%.1f"|format(kpis['avg_csat']) }}{% else %}—{% endif %}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Resolução bot</div>
+    <div class="kpi-value">{{ "%.0f"|format(kpis.get('bot_resolution_rate', 0) * 100) }}%</div>
+  </div>
+</div>
+
+{% if agent_ranking %}
+<h2>Ranking de Atendentes</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Atendente</th>
+      <th>Resolvidos</th>
+      <th>CSAT</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for a in agent_ranking %}
+    <tr>
+      <td>{{ a.name }}</td>
+      <td>{{ a.resolved }}</td>
+      <td>{% if a.avg_csat %}{{ "%.1f"|format(a.avg_csat) }}{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if tag_distribution %}
+<h2>Top Etiquetas</h2>
+{% set max_tag = tag_distribution[0].count if tag_distribution else 1 %}
+{% for t in tag_distribution %}
+<div class="tag-bar-row">
+  <span class="tag-name">{{ t.name }}</span>
+  <div class="tag-bar-bg">
+    <div class="tag-bar-fill" style="width: {{ (t.count / max_tag * 100)|round }}%"></div>
+  </div>
+  <span class="tag-count">{{ t.count }}</span>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if bot_stats %}
+<h2>Stats do Bot</h2>
+<div class="bot-grid">
+  <div class="bot-card">
+    <div class="bot-value">{{ bot_stats.get('initiated', 0) }}</div>
+    <div class="bot-label">Iniciados pelo bot</div>
+  </div>
+  <div class="bot-card">
+    <div class="bot-value">{{ bot_stats.get('resolved_without_human', 0) }}</div>
+    <div class="bot-label">Resolvidos sem humano</div>
+  </div>
+  <div class="bot-card">
+    <div class="bot-value">{{ bot_stats.get('transferred', 0) }}</div>
+    <div class="bot-label">Transferidos para humano</div>
+  </div>
+</div>
+{% endif %}
+
+{% if insights %}
+<h2>Insights da IA</h2>
+{% for ins in insights %}
+{% set icons = {'warning': '⚠️', 'danger': '🚨', 'success': '✅', 'info': 'ℹ️'} %}
+<div class="insight insight-{{ ins.get('type', 'info') }}">
+  <span class="insight-icon">{{ icons.get(ins.get('type', 'info'), 'ℹ️') }}</span>
+  <div>
+    <div class="insight-title">{{ ins.get('title', '') }}</div>
+    {% if ins.get('metric') %}<div class="insight-metric">{{ ins.metric }}</div>{% endif %}
+    <div class="insight-desc">{{ ins.get('description', '') }}</div>
+    {% if ins.get('recommendation') %}<div class="insight-rec">→ {{ ins.recommendation }}</div>{% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+</body>
+</html>

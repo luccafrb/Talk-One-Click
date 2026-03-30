@@ -53,3 +53,44 @@ class TalkClient:
                     await asyncio.sleep(attempt * 0.8)
 
         raise last_error
+
+    async def get_chats(self, days: int) -> list[dict]:
+        """Fetch all chats for the last N days with automatic pagination."""
+        from datetime import datetime, timedelta, timezone
+        start = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        skip = 0
+        take = 100
+        results: list[dict] = []
+        while True:
+            data = await self.get(
+                f"/v1/chats/?DateStartCreatedAtUTC={start}&Skip={skip}&Take={take}"
+            )
+            items: list[dict] = data if isinstance(data, list) else data.get("items", data.get("data", []))
+            results.extend(items)
+            if len(items) < take:
+                break
+            skip += take
+        return results
+
+    async def get_ratings(self, days: int) -> list[dict]:
+        """Fetch all contact ratings for the last N days with automatic pagination."""
+        from datetime import datetime, timedelta, timezone
+        start = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        skip = 0
+        take = 100
+        results: list[dict] = []
+        while True:
+            data = await self.get(
+                f"/v1/contact-ratings/?startUTC={start}&Skip={skip}&Take={take}"
+            )
+            items: list[dict] = data if isinstance(data, list) else data.get("items", data.get("data", []))
+            results.extend(items)
+            if len(items) < take:
+                break
+            skip += take
+        return results
+
+    async def get_online_members(self) -> list[dict]:
+        """Fetch currently online organization members."""
+        data = await self.get("/v1/members/online/")
+        return data if isinstance(data, list) else data.get("items", data.get("data", []))
