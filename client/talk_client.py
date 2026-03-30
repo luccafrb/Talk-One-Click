@@ -73,11 +73,11 @@ class TalkClient:
         start = start_dt.isoformat()
 
         # ── Fase 1: até 5.000 conversas ─────────────────────────────────────
-        skip, take, max_chats = 0, 100, 5000
+        skip, take, max_chats = 0, 100, 3000
         results: list[dict] = []
         hit_limit = False
 
-        logger.info("[analytics] fase 1: buscando até 5.000 conversas — últimos %d dias", days)
+        logger.info("[analytics] fase 1: buscando até 3.000 conversas — últimos %d dias", days)
         while len(results) < max_chats:
             data = await self.get(
                 f"/v1/chats/?DateStartCreatedAtUTC={start}&Skip={skip}&Take={take}"
@@ -93,7 +93,7 @@ class TalkClient:
                 break
 
         if not hit_limit:
-            logger.info("[analytics] fase 1 concluída: %d conversas cobrem o período completo", len(results))
+            logger.info("[analytics] fase 1 concluída: %d conversas (abaixo do limite de 3.000)", len(results))
             return results
 
         # ── Fase 2: amostragem por hora das lacunas ──────────────────────────

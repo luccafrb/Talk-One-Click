@@ -775,9 +775,9 @@
       </div>
 
       <div class="header-center">
+        <button class="period-btn active" data-days="3">3 dias</button>
+        <button class="period-btn" data-days="5">5 dias</button>
         <button class="period-btn" data-days="7">7 dias</button>
-        <button class="period-btn active" data-days="15">15 dias</button>
-        <button class="period-btn" data-days="30">30 dias</button>
       </div>
 
       <div class="header-right">
@@ -931,7 +931,7 @@
     'use strict';
 
     const API = 'http://localhost:8000';
-    let currentDays = 15;
+    let currentDays = 3;
     let reportData = null;
     const charts = {};
 
