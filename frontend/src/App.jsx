@@ -134,7 +134,7 @@ function FillingAnimation() {
         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         animation: 'ai-shimmer 2s linear infinite',
       }}>
-        Talk One-Click
+        BootTalk
       </h1>
 
       <div style={{
@@ -411,7 +411,7 @@ function ResultScreen({ result, tempoFinal, fromChat, maturityScore, loadingMatu
           className=""
           style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: '#FFFFFF', textShadow: '0 2px 16px rgba(76,112,218,0.35)' }}
         >
-          Talk One-Click
+          BootTalk
         </h1>
       </div>
 
@@ -1180,7 +1180,7 @@ export default function App() {
         <div className="w-full max-w-[640px] space-y-8">
           <div className="space-y-2" style={{ textAlign: 'center', marginBottom: 48 }}>
             <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>
-              Talk One-Click
+              BootTalk
             </h1>
             <p style={{ fontSize: 16, color: '#8E92A4', margin: 0 }}>Escolha como deseja configurar sua nova conta Talk hoje.</p>
             <button

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 // time = seconds after start, status = 'pending' | 'running' | 'done' | 'warn'
 function buildLogs(segment = 'seu negócio') {
   return [
-    { t: 0.1,  text: 'Iniciando configuração Talk One-Click...',        status: 'done' },
+    { t: 0.1,  text: 'Iniciando configuração BootTalk...',        status: 'done' },
     { t: 0.4,  text: 'Conectando à Talk API...',                        status: 'done' },
     { t: 0.7,  text: 'Credenciais validadas ✓',                         status: 'done' },
     { t: 1.0,  text: `Chamando GPT-4o para ${segment}...`,             status: 'running' },
@@ -82,7 +82,7 @@ export default function OnboardingTimer({ startTime, segment }) {
           <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
           <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
           <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: '#555a65', marginLeft: 8 }}>talk-one-click — deploy</span>
+          <span style={{ fontSize: 12, color: '#555a65', marginLeft: 8 }}>boottalk — deploy</span>
           <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 700, color: '#4C70DA' }}>
             {seconds}s
           </span>

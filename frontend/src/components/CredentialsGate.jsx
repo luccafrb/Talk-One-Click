@@ -171,7 +171,7 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
               marginBottom: 8,
               marginTop: 16
             }}>
-              Talk One-Click
+              BootTalk
             </h1>
             <p style={{ color: '#8E92A4', fontSize: 15, lineHeight: 1.5, margin: 0 }}>
               Conecte sua conta Talk para configurar sua empresa.

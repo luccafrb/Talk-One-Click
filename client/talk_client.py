@@ -18,7 +18,7 @@ class TalkClient:
         self._organization_id = organization_id
         self._headers = {
             "Authorization": f"Bearer {talk_api_key}",
-            "X-Talk-Client": "one-click-onboarding/1.0",
+            "X-Talk-Client": "boottalk/1.0",
         }
 
     async def get(self, path: str) -> dict:
