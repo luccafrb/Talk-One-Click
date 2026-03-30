@@ -238,7 +238,7 @@ async def analytics_report(request: AnalyticsRequest) -> AnalyticsResult:
 
 
 @app.get("/analytics/report/stream")
-async def analytics_report_stream(request: Request, talk_api_key: str, organization_id: str, days: int = 15):
+async def analytics_report_stream(request: Request, talk_api_key: str, organization_id: str, days: int = 3):
     import json as _json
     from fastapi.responses import StreamingResponse
 
@@ -358,7 +358,7 @@ async def analytics_report_stream(request: Request, talk_api_key: str, organizat
 
 
 @app.get("/analytics/export/pdf")
-async def analytics_export_pdf(talk_api_key: str, organization_id: str, days: int = 15):
+async def analytics_export_pdf(talk_api_key: str, organization_id: str, days: int = 3):
     from fastapi.responses import Response as _Response
     req = AnalyticsRequest(talk_api_key=talk_api_key, organization_id=organization_id, days=days)
     result = await analytics_report(req)
