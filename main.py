@@ -254,18 +254,34 @@ async def analytics_report_stream(request: Request, talk_api_key: str, organizat
                    "label": "Conectando à Talk API..."})
 
         # ── Etapa 1: buscar dados (paralelo, cancelável) ─────────────────────
+        # Callback síncrono chamado pela fase 2 de get_chats (amostragem por hora)
+        _sp = {"done": 0, "total": 0, "active": False}
+
+        def on_chat_progress(done: int, total: int) -> None:
+            _sp["done"] = done
+            _sp["total"] = total
+            _sp["active"] = True
+
         async def _do_fetch():
             return await _asyncio.gather(
-                client.get_chats(days),
+                client.get_chats(days, on_progress=on_chat_progress),
                 client.get_ratings(days),
                 client.get_online_members(),
             )
+
         fetch_task = _asyncio.create_task(_do_fetch())
         while not fetch_task.done():
             if await request.is_disconnected():
                 fetch_task.cancel()
                 return
-            await _asyncio.sleep(0.3)
+            await _asyncio.sleep(0.4)
+            if _sp["active"] and _sp["total"] > 0:
+                pct = 10 + (_sp["done"] / _sp["total"]) * 35
+                yield evt({"type": "progress", "pct": round(pct, 1), "step": "fetch",
+                           "label": f"Amostrando período... {_sp['done']}/{_sp['total']} horas"})
+            else:
+                yield evt({"type": "progress", "pct": 10, "step": "fetch",
+                           "label": "Buscando conversas..."})
 
         try:
             chats, ratings, members = fetch_task.result()
@@ -279,8 +295,9 @@ async def analytics_report_stream(request: Request, talk_api_key: str, organizat
         if await request.is_disconnected():
             return
 
+        sampling_note = f" (amostragem: {_sp['total']} horas)" if _sp["active"] else ""
         yield evt({"type": "progress", "pct": 45, "step": "fetch",
-                   "label": f"{len(chats)} conversas e {len(ratings)} avaliações carregadas"})
+                   "label": f"{len(chats)} conversas e {len(ratings)} avaliações carregadas{sampling_note}"})
 
         # ── Etapa 2: processar métricas ──────────────────────────────────────
         processor = AnalyticsProcessor(chats, ratings, members)
