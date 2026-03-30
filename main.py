@@ -275,15 +275,23 @@ async def analytics_report_stream(request: Request, talk_api_key: str, organizat
                 fetch_task.cancel()
                 return
             await _asyncio.sleep(0.4)
-            if _sp["active"] and _sp["total"] > 0:
-                pct = 10 + (_sp["done"] / _sp["total"]) * 35
-                label = (f"Buscando chats... {_sp['done']}/{_sp['total']}"
-                         if _sp["total"] > days
-                         else f"Amostrando período... dia {_sp['done']}/{_sp['total']}")
-                yield evt({"type": "progress", "pct": round(pct, 1), "step": "fetch", "label": label})
-            else:
+            done, total, active = _sp["done"], _sp["total"], _sp["active"]
+            if not active:
+                # ainda contando
+                yield evt({"type": "progress", "pct": 7, "step": "fetch",
+                           "label": "Contando conversas finalizadas..."})
+            elif done == 0:
+                # contagem concluída, fetch ainda não começou
                 yield evt({"type": "progress", "pct": 10, "step": "fetch",
-                           "label": "Buscando conversas..."})
+                           "label": f"{total} conversas encontradas, buscando..."})
+            else:
+                # fetch em andamento com progresso real
+                pct = 12 + (done / total) * 33 if total > 0 else 12
+                if total > days:
+                    label = f"Buscando conversas... {done}/{total}"
+                else:
+                    label = f"Amostrando período... dia {done}/{total}"
+                yield evt({"type": "progress", "pct": round(pct, 1), "step": "fetch", "label": label})
 
         try:
             chats, ratings, members = fetch_task.result()

@@ -77,6 +77,9 @@ class TalkClient:
         total = await self._count_chats(start, end)
         logger.info("[analytics] total de chats fechados no período: %d", total)
 
+        if on_progress:
+            on_progress(0, total)  # sinaliza o total para a barra antes de buscar
+
         if total <= 3000:
             return await self._fetch_all_chats(start, end, total, on_progress)
         else:
