@@ -297,7 +297,13 @@ async def analytics_report_stream(request: Request, talk_api_key: str, organizat
         if await request.is_disconnected():
             return
 
-        sampling_note = f" (amostragem: {_sp['total']} horas)" if _sp["active"] else ""
+        if not chats:
+            yield evt({"type": "error", "step": "fetch",
+                       "message": f"Nenhuma conversa finalizada encontrada nos últimos {days} dias. "
+                                  "Verifique se o período selecionado contém atendimentos encerrados."})
+            return
+
+        sampling_note = f" (amostragem diária)" if _sp["active"] else ""
         yield evt({"type": "progress", "pct": 45, "step": "fetch",
                    "label": f"{len(chats)} conversas e {len(ratings)} avaliações carregadas{sampling_note}"})
 
