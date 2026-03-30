@@ -48,7 +48,7 @@ class AnalyticsProcessor:
             if not isinstance(frm, dict):
                 continue
             created = _parse_dt(c.get("eventAtUTC"))
-            replied = _parse_dt(frm.get("createdAtUTC"))
+            replied = _parse_dt(frm.get("eventAtUTC"))  # MessageReferenceModel usa eventAtUTC
             if created and replied and replied > created:
                 frt_list.append((replied - created).total_seconds())
 
@@ -112,14 +112,18 @@ class AnalyticsProcessor:
     def agent_ranking(self) -> list[dict]:
         agents: dict[str, dict] = {}
         for c in self.chats:
-            m = c.get("organizationMember")
+            # organizationMember = agente atual (null em chats fechados)
+            # lastOrganizationMember = último agente que atendeu
+            m = c.get("organizationMember") or c.get("lastOrganizationMember")
             if not isinstance(m, dict) or not m.get("id"):
                 continue
             aid = m["id"]
             if aid not in agents:
+                # ChatAgentReferenceModel não tem campo name — usamos id como fallback
+                display = m.get("name") or m.get("email") or aid
                 agents[aid] = {
                     "id": aid,
-                    "name": m.get("name") or aid,
+                    "name": display,
                     "resolved": 0,
                     "csat_list": [],
                 }

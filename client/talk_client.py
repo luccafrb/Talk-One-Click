@@ -83,6 +83,10 @@ class TalkClient:
                 f"/v1/chats/?DateStartCreatedAtUTC={start}&Skip={skip}&Take={take}"
             )
             items: list[dict] = data if isinstance(data, list) else data.get("items", data.get("data", []))
+            if skip == 0 and items:
+                import json as _json
+                logger.info("[analytics] ESTRUTURA DO PRIMEIRO CHAT:\n%s",
+                            _json.dumps(items[0], indent=2, ensure_ascii=False, default=str))
             results.extend(items)
             logger.info("[analytics] fase 1 — skip=%d: %d itens (total: %d)", skip, len(items), len(results))
             if len(items) < take:
