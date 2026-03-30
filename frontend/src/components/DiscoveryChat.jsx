@@ -355,6 +355,7 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
               />
               <button
                 onClick={sendMessage}
+                onMouseDown={e => e.preventDefault()}
                 disabled={loading || !input.trim()}
                 style={{
                   background: loading || !input.trim() ? '#2F3238' : '#4C70DA',
