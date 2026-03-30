@@ -17,6 +17,7 @@ import ConfigPreview from '@/components/ConfigPreview'
 import OnboardingTimer from '@/components/OnboardingTimer'
 import DeployResult from '@/components/DeployResult'
 import CredentialsGate from '@/components/CredentialsGate'
+import StepperForm from '@/components/StepperForm'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { TEMPLATES } from '@/data/templates'
 import { decodeConfig } from '@/utils/shareConfig'
@@ -687,6 +688,69 @@ export default function App() {
     }
   }, [isDemoMode])
 
+  async function handleStepperSubmit(stepperData) {
+    const t0 = Date.now()
+    setStartTime(t0)
+    setStatus('loading')
+    setError(null)
+    setForm(f => ({ ...f, ...stepperData }))
+
+    const labelItems = stepperData.label_items ?? []
+    const labelNames = labelItems.map(l => l.name.trim()).filter(Boolean)
+    const labelColors = labelItems.map(l => l.color)
+    const hasColorOverrides = labelColors.some(Boolean)
+
+    const payload = {
+      business_name: stepperData.business_name,
+      segment: stepperData.segment,
+      goal: stepperData.goal,
+      approach: stepperData.approach,
+      talk_api_key: credentials.talk_api_key,
+      organization_id: credentials.organization_id,
+      create_sectors: stepperData.create_sectors,
+      sectors_description: stepperData.sectors_description || undefined,
+      create_labels: stepperData.create_labels,
+      labels_description: stepperData.create_labels && labelNames.length > 0 ? labelNames.join(', ') : undefined,
+      label_colors_override: stepperData.create_labels && hasColorOverrides ? labelColors : undefined,
+      create_chatbot: stepperData.create_chatbot,
+      chatbot_description: stepperData.create_chatbot && stepperData.chatbot_description ? stepperData.chatbot_description : undefined,
+      create_channel: stepperData.create_channel,
+      channel_name: stepperData.create_channel && stepperData.channel_name ? stepperData.channel_name : undefined,
+      create_quick_answers: false,
+      create_custom_fields: false,
+      configure_org_preferences: false,
+    }
+
+    try {
+      const endpoint = isDemoMode ? `${API_URL}/onboarding/demo` : `${API_URL}/onboarding`
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      setTempoFinal(((Date.now() - t0) / 1000).toFixed(1))
+      setResult(data)
+      setStatus('result')
+
+      if (!isDemoMode) {
+        setLoadingMaturity(true)
+        fetch(`${API_URL}/onboarding/chat/maturity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [], onboarding_result: data }),
+        })
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(score => setMaturityScore(score))
+          .catch(() => {})
+          .finally(() => setLoadingMaturity(false))
+      }
+    } catch {
+      setError('Não foi possível conectar ao servidor.')
+      setStatus('stepper')
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     const t0 = Date.now()
@@ -860,7 +924,91 @@ export default function App() {
     setForm(f => ({ ...f, ...patch }))
     setAiFilledFields(filled)
     setStatus('transitioning')
-    setTimeout(() => setStatus('form'), 2200)
+    setTimeout(() => setStatus('stepper'), 2200)
+  }
+
+  async function handleChatComplete(data) {
+    const t0 = Date.now()
+    setStartTime(t0)
+    setFromChat(true)
+    if (data.messages) setChatMessages(data.messages)
+    
+    setStatus('loading')
+    try {
+      const endpoint = isDemoMode ? `${API_URL}/onboarding/demo` : `${API_URL}/onboarding`
+      const payload = {
+        talk_api_key: credentials.talk_api_key,
+        organization_id: credentials.organization_id,
+        business_name: data.business_name || form.business_name || '',
+        segment: data.segment || form.segment || 'tecnologia',
+        goal: data.goal || form.goal || '',
+        approach: data.approach || form.approach || 'consultivo',
+        create_sectors: data.create_sectors ?? true,
+        sectors_description: data.sectors_description || '',
+        create_labels: data.create_labels ?? true,
+        label_items: data.label_items || form.label_items,
+        create_chatbot: data.create_chatbot ?? true,
+        chatbot_description: data.chatbot_description || '',
+        create_channel: data.create_channel ?? false,
+        channel_name: data.channel_name || '',
+        create_quick_answers: data.create_quick_answers ?? true,
+        quick_answers_description: data.quick_answers_description || '',
+        create_custom_fields: data.create_custom_fields ?? true,
+        custom_field_items_override: data.custom_field_items_override || null,
+        configure_org_preferences: data.configure_org_preferences ?? true,
+        close_chat_message: data.close_chat_message || '',
+        member_emails: data.member_emails ? (Array.isArray(data.member_emails) ? data.member_emails : data.member_emails.split(',').map(s=>s.trim())) : [],
+      }
+      
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      const resultData = await res.json()
+      
+      if (!res.ok) throw new Error(resultData.detail || 'Erro na configuração')
+      
+      setResult(resultData)
+      setTempoFinal(((Date.now() - t0) / 1000).toFixed(1))
+      
+      if (!isDemoMode) {
+        setLoadingMaturity(true)
+        fetch(`${API_URL}/onboarding/chat/maturity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: data.messages ?? [], onboarding_result: resultData }),
+        })
+          .then(async r => {
+            if (!r.ok) throw new Error()
+            return r.json()
+          })
+          .then(score => setMaturityScore(score))
+          .catch(() => {})
+          .finally(() => setLoadingMaturity(false))
+      } else {
+        setLoadingMaturity(true)
+        setTimeout(() => {
+          setMaturityScore({
+            score: 75,
+            nivel: "Avançado",
+            resumo: "Sua operação demonstra forte adoção de processos digitais com excelente separação de setores.",
+            pontos_fortes: ["Separação clara entre Comercial e Níveis de Suporte.", "Uso de etiquetas para classificar motivos de contato.", "Implementação de chatbot automatizado para triagem."],
+            oportunidades: [
+              { titulo: "Integrar IA de Respostas", descricao: "Mapeie perguntas frequentes para o Chatbot IA.", impacto: "Alto", prazo: "Curto prazo" },
+              { titulo: "Criar Campos Personalizados", descricao: "Colete o ID de cliente para agilizar o suporte.", impacto: "Médio", prazo: "Imediato" }
+            ],
+            proximo_passo: "Ative fluxos de resposta rápida para reduzir o tempo da primeira interação."
+          })
+          setLoadingMaturity(false)
+        }, 3000)
+      }
+      
+      setStatus('result')
+    } catch (err) {
+      setError(err.message || 'Erro ao processar as configurações geradas pela IA.')
+      setStatus('stepper')
+    }
   }
 
   async function handleSurpriseConfirm() {
@@ -876,123 +1024,157 @@ export default function App() {
         }),
       })
       const data = await res.json()
-      setShowSurpriseModal(false)
       setSurpriseDesc('')
       handleChatComplete(data)
     } catch {
-      // silently ignore — modal stays open
+      // silently ignore
     } finally {
       setSurpriseLoading(false)
     }
   }
 
   if (status === 'credentials') return (
-    <CredentialsGate
-      sharedConfigBanner={sharedConfigBanner}
-      onDismissBanner={() => setSharedConfigBanner(false)}
-      onConnect={(apiKey, orgId) => {
-        sessionStorage.setItem('talk_api_key', apiKey)
-        sessionStorage.setItem('talk_organization_id', orgId)
-        setCredentials({ talk_api_key: apiKey, organization_id: orgId })
-        if (pendingConfig) {
-          setForm(f => ({ ...f, ...pendingConfig }))
-          setImportedBadge(true)
-          setTimeout(() => setImportedBadge(false), 4000)
-          setStatus('form')
-        } else {
-          setStatus('select')
-        }
-      }}
-    />
+    <div key={status} className="page-transition">
+      <CredentialsGate
+        sharedConfigBanner={sharedConfigBanner}
+        onDismissBanner={() => setSharedConfigBanner(false)}
+        onConnect={(apiKey, orgId) => {
+          sessionStorage.setItem('talk_api_key', apiKey)
+          sessionStorage.setItem('talk_organization_id', orgId)
+          setCredentials({ talk_api_key: apiKey, organization_id: orgId })
+          if (pendingConfig) {
+            setForm(f => ({ ...f, ...pendingConfig }))
+            setImportedBadge(true)
+            setTimeout(() => setImportedBadge(false), 4000)
+            setStatus('stepper')
+          } else {
+            setStatus('select')
+          }
+        }}
+      />
+    </div>
   )
 
+  if (status === 'transitioning') return <div key={status} className="page-transition"><>{demoBadge}<FillingAnimation /></></div>
+  if (status === 'loading') return <div key={status} className="page-transition"><>{demoBadge}<OnboardingTimer startTime={startTime ?? Date.now()} segment={form.segment} /></></div>
+  
+  if (status === 'surprise') return (
+    <div key={status} className="page-transition min-h-svh flex flex-col items-center justify-center px-4" style={{ background: 'var(--talk-bg-primary)' }}>
+      {demoBadge}
+      <button
+        onClick={() => setStatus('select')}
+        style={{ position: 'fixed', top: 20, left: 24, zIndex: 100, background: 'rgba(26,28,32,0.8)', border: '1px solid #2A2D32', borderRadius: 8, cursor: 'pointer', color: '#8E92A4', fontSize: 13, padding: '8px 14px', display: 'flex', gap: 6, alignItems: 'center', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = '#4C70DA'; e.currentTarget.style.background = '#1A1C20' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#8E92A4'; e.currentTarget.style.borderColor = '#2A2D32'; e.currentTarget.style.background = 'rgba(26,28,32,0.8)' }}
+      >
+        <span style={{ fontSize: 16, lineHeight: 1 }}>←</span> Voltar
+      </button>
 
-  if (status === 'transitioning') return <>{demoBadge}<FillingAnimation /></>
-  if (status === 'loading') return <>{demoBadge}<OnboardingTimer startTime={startTime ?? Date.now()} /></>
-  if (status === 'result') return <>{demoBadge}<DeployResult result={result} tempoFinal={tempoFinal} fromChat={fromChat} maturityScore={maturityScore} loadingMaturity={loadingMaturity} credentials={credentials} isDemoMode={isDemoMode} form={form} onReset={() => { setStatus('select'); setResult(null); setTempoFinal(null); setFromChat(false); setChatMessages(null); setMaturityScore(null); setLoadingMaturity(false) }} /></>
+      <div style={{ width: '100%', maxWidth: 540, height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 80, paddingBottom: 24, boxSizing: 'border-box' }}>
+
+        {/* Scrollable Content */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ marginBottom: 28 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#FFFFFF', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+              Surpreenda-me ✨
+            </h1>
+            <p style={{ fontSize: 15, color: '#8E92A4', margin: 0, lineHeight: 1.5 }}>
+              Descreva seu negócio e a IA de alto nível criará setores, etiquetas e fluxos baseados na sua descrição num piscar de olhos.
+            </p>
+          </div>
+
+          <div style={{ position: 'relative', marginBottom: 24 }}>
+            <textarea
+              value={surpriseDesc}
+              onChange={e => setSurpriseDesc(e.target.value.slice(0, 500))}
+              placeholder="Ex: Somos uma clínica odontológica com 3 dentistas. Recebemos muitos pedidos de agendamento e orçamentos pelo WhatsApp."
+              rows={5}
+              maxLength={500}
+              disabled={surpriseLoading}
+              className="focus-visible:ring-1 focus-visible:ring-talk-accent"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: '#1A1C20', border: '1px solid #2A2D32', borderRadius: 8,
+                padding: '16px 18px', color: '#FFFFFF', fontSize: 15, lineHeight: 1.6,
+                resize: 'none', outline: 'none', fontFamily: 'inherit',
+                opacity: surpriseLoading ? 0.6 : 1,
+                transition: 'border-color 0.2s, box-shadow 0.2s'
+              }}
+              onFocus={e => e.currentTarget.style.borderColor = '#4C70DA'}
+              onBlur={e => e.currentTarget.style.borderColor = '#2A2D32'}
+            />
+            <span style={{ position: 'absolute', bottom: 12, right: 14, fontSize: 12, color: '#8E92A4', pointerEvents: 'none', fontWeight: 500 }}>
+              {surpriseDesc.length}/500
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Nav */}
+        <div style={{ display: 'flex', gap: 12, marginTop: 16, flexShrink: 0 }}>
+          <button
+            onClick={handleSurpriseConfirm}
+            disabled={!surpriseDesc.trim() || surpriseLoading}
+            style={{
+              width: '100%', padding: '14px', borderRadius: 8, fontWeight: 600, fontSize: 15,
+              background: (!surpriseDesc.trim() || surpriseLoading) ? '#2F3238' : '#4C70DA',
+              color: (!surpriseDesc.trim() || surpriseLoading) ? '#8E92A4' : '#FFFFFF', border: 'none', cursor: (!surpriseDesc.trim() || surpriseLoading) ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              boxShadow: (!surpriseDesc.trim() || surpriseLoading) ? 'none' : '0 4px 12px rgba(76,112,218,0.3)',
+            }}
+            onMouseEnter={e => { if (surpriseDesc.trim() && !surpriseLoading) e.currentTarget.style.background = '#3d5ec7' }}
+            onMouseLeave={e => { if (surpriseDesc.trim() && !surpriseLoading) e.currentTarget.style.background = '#4C70DA' }}
+          >
+            {surpriseLoading ? (
+              <>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid #FFFFFF88', borderTopColor: '#FFFFFF', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
+                Gerando arquitetura...
+              </>
+            ) : '🚀 Construir minha operação'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (status === 'stepper') return (
+    <div key={status} className="page-transition">
+      <>{demoBadge}<StepperForm
+        initialForm={{
+          business_name: form.business_name,
+          segment: form.segment,
+          goal: form.goal,
+          approach: form.approach,
+          create_sectors: form.create_sectors,
+          sectors_description: form.sectors_description || '',
+          create_labels: form.create_labels,
+          label_items: form.label_items?.length ? form.label_items : [{ name: '', color: '' }],
+          create_chatbot: form.create_chatbot,
+          chatbot_description: form.chatbot_description || '',
+          create_channel: form.create_channel,
+          channel_name: form.channel_name || '',
+        }}
+        onSubmit={handleStepperSubmit}
+        onBack={() => setStatus('select')}
+        aiFilledFields={aiFilledFields}
+      /></>
+    </div>
+  )
+  if (status === 'result') return <div key={status} className="page-transition"><>{demoBadge}<DeployResult result={result} tempoFinal={tempoFinal} fromChat={fromChat} maturityScore={maturityScore} loadingMaturity={loadingMaturity} credentials={credentials} isDemoMode={isDemoMode} form={form} onReset={() => { setStatus('select'); setResult(null); setTempoFinal(null); setFromChat(false); setChatMessages(null); setMaturityScore(null); setLoadingMaturity(false) }} /></></div>
 
   if (status === 'chat') return (
-    <>{demoBadge}<DiscoveryChat
-      onComplete={handleChatComplete}
-      onBack={() => setStatus('select')}
-      isDemoMode={isDemoMode}
-    /></>
+    <div key={status} className="page-transition">
+      <>{demoBadge}<DiscoveryChat
+        onComplete={handleChatComplete}
+        onBack={() => setStatus('select')}
+        isDemoMode={isDemoMode}
+      /></>
+    </div>
   )
 
   if (status === 'select') return (
-    <>
+    <div key={status} className="page-transition">
       {demoBadge}
-      {/* Modal Surpreenda-me */}
-      {showSurpriseModal && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}
-          onClick={e => { if (e.target === e.currentTarget && !surpriseLoading) { setShowSurpriseModal(false); setSurpriseDesc('') } }}
-        >
-          <div style={{ background: '#1A1C20', border: '1px solid #2A2D32', borderRadius: 8, padding: 24, maxWidth: 460, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-            <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#FFFFFF', marginBottom: 6 }}>Me conta sobre sua empresa</h2>
-              <p style={{ fontSize: 13, color: '#8E92A4', lineHeight: 1.5, margin: 0 }}>
-                Com isso a IA consegue montar uma configuração muito mais precisa para o seu negócio instantaneamente.
-              </p>
-            </div>
-
-            <div style={{ position: 'relative', marginBottom: 20 }}>
-              <textarea
-                value={surpriseDesc}
-                onChange={e => setSurpriseDesc(e.target.value.slice(0, 500))}
-                placeholder="Ex: Somos uma clínica odontológica com 3 dentistas..."
-                rows={4}
-                maxLength={500}
-                disabled={surpriseLoading}
-                className="focus-visible:ring-1"
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  background: '#141619', border: '1px solid #2A2D32', borderRadius: 6,
-                  padding: '12px 14px', color: '#FFFFFF', fontSize: 13, lineHeight: 1.5,
-                  resize: 'none', outline: 'none', fontFamily: 'inherit',
-                  opacity: surpriseLoading ? 0.6 : 1,
-                  transition: 'border-color 0.1s'
-                }}
-              />
-              <span style={{ position: 'absolute', bottom: 8, right: 10, fontSize: 11, color: '#8E92A4', pointerEvents: 'none' }}>
-                {surpriseDesc.length}/500
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => { setShowSurpriseModal(false); setSurpriseDesc('') }}
-                disabled={surpriseLoading}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: 6, fontWeight: 500, fontSize: 13,
-                  background: 'transparent', color: '#FFFFFF', border: '1px solid #2A2D32', cursor: 'pointer',
-                  opacity: surpriseLoading ? 0.5 : 1,
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSurpriseConfirm}
-                disabled={!surpriseDesc.trim() || surpriseLoading}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: 6, fontWeight: 500, fontSize: 13,
-                  background: (!surpriseDesc.trim() || surpriseLoading) ? '#2F3238' : '#4C70DA',
-                  color: (!surpriseDesc.trim() || surpriseLoading) ? '#8E92A4' : '#FFFFFF', border: 'none', cursor: (!surpriseDesc.trim() || surpriseLoading) ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                }}
-              >
-                {surpriseLoading ? (
-                  <>
-                    <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid #FFFFFF88', borderTopColor: '#FFFFFF', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
-                    Gerando...
-                  </>
-                ) : 'Gerar configuração'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="min-h-svh flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-[640px] space-y-8">
@@ -1042,9 +1224,9 @@ export default function App() {
               <span style={{ fontSize: 26, opacity: hoveredCard === 'chat' ? 1 : 0.6, transition: 'opacity 0.2s' }}>💬</span>
             </div>
 
-            {/* Card Form */}
+            {/* Card Stepper */}
             <div
-              onClick={() => setStatus('form')}
+              onClick={() => setStatus('stepper')}
               onMouseEnter={() => setHoveredCard('form')}
               onMouseLeave={() => setHoveredCard(null)}
               style={{
@@ -1058,7 +1240,7 @@ export default function App() {
               <div style={{ flex: 1 }}>
                 <h2 style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 18, margin: '0 0 8px 0' }}>Já sei o que quero</h2>
                 <p style={{ color: '#8E92A4', fontSize: 15, lineHeight: 1.5, margin: 0 }}>
-                  Preencha os campos diretamente em um painel manual de configuração.
+                  Configure passo a passo em 4 etapas guiadas — rápido e sem complexidade.
                 </p>
               </div>
               <span style={{ fontSize: 26, filter: hoveredCard === 'form' ? 'none' : 'grayscale(1)', opacity: hoveredCard === 'form' ? 1 : 0.6, transition: 'all 0.2s' }}>📋</span>
@@ -1066,7 +1248,7 @@ export default function App() {
 
             {/* Surpreenda-me */}
             <div
-              onClick={() => setShowSurpriseModal(true)}
+              onClick={() => setStatus('surprise')}
               onMouseEnter={() => setHoveredCard('surprise')}
               onMouseLeave={() => setHoveredCard(null)}
               style={{
@@ -1087,52 +1269,12 @@ export default function App() {
               <span style={{ fontSize: 26, filter: hoveredCard === 'surprise' ? 'none' : 'grayscale(1)', opacity: hoveredCard === 'surprise' ? 1 : 0.6, transition: 'all 0.2s' }}>✨</span>
             </div>
 
-            {/* Divisor */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
-              <div style={{ flex: 1, height: 1, background: '#2A2D32' }} />
-              <span style={{ fontSize: 12, color: '#555a65', whiteSpace: 'nowrap' }}>outras ferramentas</span>
-              <div style={{ flex: 1, height: 1, background: '#2A2D32' }} />
-            </div>
 
-            {/* Card Relatório */}
-            <div
-              onClick={() => {
-                const key = credentials.talk_api_key
-                const org = credentials.organization_id
-                const url = new URL('./report.html', window.location.href)
-                if (key) url.searchParams.set('api_key', key)
-                if (org) url.searchParams.set('org_id', org)
-                window.open(url.toString(), '_blank')
-              }}
-              onMouseEnter={() => setHoveredCard('report')}
-              onMouseLeave={() => setHoveredCard(null)}
-              style={{
-                padding: '20px 28px', borderRadius: 10,
-                background: hoveredCard === 'report' ? 'rgba(34,197,94,0.04)' : '#1A1C20',
-                border: hoveredCard === 'report' ? '1px solid rgba(34,197,94,0.4)' : '1px solid #2A2D32',
-                cursor: 'pointer', transition: 'all 0.15s ease-out',
-                display: 'flex', alignItems: 'center', gap: 24,
-                boxShadow: hoveredCard === 'report' ? '0 4px 16px rgba(0,0,0,0.3)' : 'none'
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <h2 style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 17, margin: 0 }}>Relatório de Atendimento</h2>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
-                    Abre em nova aba
-                  </span>
-                </div>
-                <p style={{ color: '#8E92A4', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
-                  Métricas de conversas, ranking de agentes, heatmap de horários e insights gerados por IA.
-                </p>
-              </div>
-              <span style={{ fontSize: 24, filter: hoveredCard === 'report' ? 'none' : 'grayscale(1)', opacity: hoveredCard === 'report' ? 1 : 0.5, transition: 'all 0.2s' }}>📊</span>
-            </div>
           </div>
 
         </div>
       </div>
-    </>
+    </div>
   )
 
   return (

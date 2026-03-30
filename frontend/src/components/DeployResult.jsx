@@ -1,6 +1,208 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import MaturityScore from './MaturityScore'
 import { encodeConfig } from '@/utils/shareConfig'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+function fireConfetti() {
+  const canvas = document.createElement('canvas')
+  canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;width:100%;height:100%;'
+  canvas.width = window.innerWidth
+  canvas.height = window.innerHeight
+  document.body.appendChild(canvas)
+  const ctx = canvas.getContext('2d')
+
+  const COLORS = ['#4C70DA', '#7b93e8', '#ffffff', '#06b6d4', '#4C70DA', '#a5b4fc', '#4C70DA']
+  const particles = Array.from({ length: 130 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * -canvas.height * 0.5,
+    r: 3 + Math.random() * 5,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    speed: 2 + Math.random() * 4,
+    tiltAngle: Math.random() * Math.PI * 2,
+    tiltInc: 0.08 + Math.random() * 0.25,
+    opacity: 1,
+  }))
+
+  let frame, elapsed = 0
+  const animate = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    elapsed++
+    particles.forEach(p => {
+      p.tiltAngle += p.tiltInc
+      p.y += p.speed
+      if (elapsed > 100) p.opacity = Math.max(0, p.opacity - 0.012)
+      ctx.globalAlpha = p.opacity
+      ctx.fillStyle = p.color
+      ctx.beginPath()
+      ctx.ellipse(p.x + Math.sin(p.tiltAngle) * 10, p.y, p.r * 0.45, p.r, Math.sin(p.tiltAngle) * 0.4, 0, Math.PI * 2)
+      ctx.fill()
+      if (p.y > canvas.height) {
+        p.y = -10; p.x = Math.random() * canvas.width
+        if (elapsed > 100) p.opacity = 0
+      }
+    })
+    if (elapsed < 280) { frame = requestAnimationFrame(animate) }
+    else { if (canvas.parentNode) canvas.parentNode.removeChild(canvas) }
+  }
+  frame = requestAnimationFrame(animate)
+
+  try {
+    const ac = new AudioContext()
+    ;[523, 659, 784, 1047].forEach((freq, i) => {
+      setTimeout(() => {
+        const osc = ac.createOscillator()
+        const gain = ac.createGain()
+        osc.connect(gain); gain.connect(ac.destination)
+        osc.frequency.value = freq; osc.type = 'sine'
+        gain.gain.setValueAtTime(0, ac.currentTime)
+        gain.gain.linearRampToValueAtTime(0.12, ac.currentTime + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.45)
+        osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.45)
+      }, i * 90)
+    })
+  } catch {}
+
+  return () => { cancelAnimationFrame(frame); if (canvas.parentNode) canvas.parentNode.removeChild(canvas) }
+}
+
+function ConversationSimulator({ result, form, isDemoMode }) {
+  const [messages, setMessages] = useState([])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [started, setStarted] = useState(false)
+  const bottomRef = useRef(null)
+
+  useEffect(() => {
+    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  async function start() {
+    setStarted(true)
+    const welcome = result.welcome_message || `Olá! Sou ${result.chatbot_name || 'o assistente'} de ${form?.business_name || 'nossa empresa'}. Como posso ajudar?`
+    setMessages([{ role: 'assistant', content: welcome }])
+  }
+
+  async function send() {
+    if (!input.trim() || loading) return
+    const userMsg = { role: 'user', content: input.trim() }
+    setInput('')
+    setMessages(prev => [...prev, userMsg])
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/onboarding/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatbot_name: result.chatbot_name || 'Assistente',
+          chatbot_approach: result.chatbot_approach || null,
+          business_name: form?.business_name || 'nossa empresa',
+          welcome_message: result.welcome_message || null,
+          messages: [...messages, userMsg],
+          is_demo: isDemoMode,
+        }),
+      })
+      const data = await res.json()
+      setMessages(prev => [...prev, { role: 'assistant', content: data.message }])
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Desculpe, ocorreu um erro. Tente novamente.' }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!started) {
+    return (
+      <div style={{ marginTop: 12 }}>
+        <button
+          onClick={start}
+          style={{
+            width: '100%', padding: '10px', borderRadius: 6, fontWeight: 500, fontSize: 13,
+            background: 'rgba(76,112,218,0.1)', color: '#7b93e8',
+            border: '1px solid rgba(76,112,218,0.3)', cursor: 'pointer',
+            transition: 'background 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(76,112,218,0.18)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(76,112,218,0.1)' }}
+        >
+          💬 Simular conversa com o chatbot
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      marginTop: 16, borderRadius: 10, border: '1px solid rgba(76,112,218,0.3)',
+      background: '#0f1114', overflow: 'hidden',
+    }}>
+      <div style={{
+        padding: '10px 14px', background: 'rgba(76,112,218,0.12)',
+        borderBottom: '1px solid rgba(76,112,218,0.2)',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF' }}>
+          {result.chatbot_name || 'Chatbot'} — simulação
+        </span>
+        <span style={{ fontSize: 11, color: '#8E92A4', marginLeft: 'auto' }}>como um cliente</span>
+      </div>
+
+      <div style={{ height: 220, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div style={{
+              maxWidth: '78%', padding: '8px 12px', borderRadius: m.role === 'user' ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+              background: m.role === 'user' ? '#4C70DA' : '#1e2126',
+              color: '#FFFFFF', fontSize: 13, lineHeight: 1.5,
+            }}>
+              {m.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div style={{ display: 'flex' }}>
+            <div style={{ padding: '8px 14px', borderRadius: '12px 12px 12px 4px', background: '#1e2126', display: 'flex', gap: 4, alignItems: 'center' }}>
+              {[0, 1, 2].map(j => (
+                <div key={j} style={{ width: 6, height: 6, borderRadius: '50%', background: '#8E92A4', animation: `bounce 1.2s ${j * 0.2}s infinite` }} />
+              ))}
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      <style>{`@keyframes bounce { 0%,80%,100%{transform:scale(0.7);opacity:0.5} 40%{transform:scale(1);opacity:1} }`}</style>
+
+      <div style={{ padding: '10px 12px', borderTop: '1px solid #1e2126', display: 'flex', gap: 8 }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+          placeholder="Digite como se fosse um cliente..."
+          style={{
+            flex: 1, background: '#1a1d21', border: '1px solid #2a2d32', borderRadius: 6,
+            padding: '8px 12px', color: '#FFFFFF', fontSize: 13, outline: 'none',
+            fontFamily: 'inherit',
+          }}
+        />
+        <button
+          onClick={send}
+          disabled={!input.trim() || loading}
+          style={{
+            padding: '8px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600,
+            background: input.trim() && !loading ? '#4C70DA' : '#2a2d32',
+            color: input.trim() && !loading ? '#FFFFFF' : '#555',
+            border: 'none', cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
+            transition: 'background 0.15s',
+          }}
+        >
+          →
+        </button>
+      </div>
+    </div>
+  )
+}
 
 const TAG_COLOR_HEX = {
   Blue: '#3b82f6', Skyblue: '#38bdf8', Cyan: '#06b6d4', Aquamarine: '#2dd4bf',
@@ -134,6 +336,10 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
   const [undoLoading, setUndoLoading] = useState(false)
   const [undoDone, setUndoDone] = useState(false)
   const [undoToast, setUndoToast] = useState(null)
+
+  useEffect(() => {
+    if (result.status === 'ok') return fireConfetti()
+  }, [])
 
   useEffect(() => {
     if (undoToast) {
@@ -506,6 +712,11 @@ export default function DeployResult({ result, tempoFinal, fromChat, maturitySco
                 </button>
               )}
             </div>
+          )}
+
+          {/* Simulador de conversa */}
+          {result.chatbot_created && (
+            <ConversationSimulator result={result} form={form} isDemoMode={isDemoMode} />
           )}
 
           {loadingMaturity && !maturityScore && (

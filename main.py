@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from models import OnboardingRequest, OnboardingResult, ChatSessionRequest, ChatSessionResponse, MaturityRequest, SurpriseRequest, ValidateCredentialsRequest, UndoRequest
+from models import OnboardingRequest, OnboardingResult, ChatSessionRequest, ChatSessionResponse, MaturityRequest, SurpriseRequest, ValidateCredentialsRequest, UndoRequest, SimulateRequest
 from orchestrator import Orchestrator
 from ai.discovery_agent import DiscoveryAgent
 from ai.ai_configurator import AiConfigurator
@@ -180,215 +180,6 @@ async def chat_demo(request: DemoChatRequest):
     return _DEMO_STEPS[step]
 
 
-# ── Analytics ─────────────────────────────────────────────────────────────────
-
-import asyncio as _asyncio
-
-from models import AnalyticsRequest, AnalyticsResult
-from modules.analytics_processor import AnalyticsProcessor
-from ai.ai_insights import generate_insights
-from modules.pdf_exporter import export_report_pdf
-
-
-@app.post("/analytics/report", response_model=AnalyticsResult)
-async def analytics_report(request: AnalyticsRequest) -> AnalyticsResult:
-    from client.talk_client import TalkClient as _TalkClient
-    client = _TalkClient(request.talk_api_key, request.organization_id)
-    errors: list = []
-
-    try:
-        chats, ratings, members = await _asyncio.gather(
-            client.get_chats(request.days),
-            client.get_ratings(request.days),
-            client.get_online_members(),
-        )
-    except Exception as e:
-        errors.append({"step": "fetch", "error": str(e)})
-        return AnalyticsResult(status="error", errors=errors)
-
-    processor = AnalyticsProcessor(chats, ratings, members)
-
-    kpis = processor.compute_kpis()
-    volume = processor.volume_series()
-    heatmap = processor.hourly_heatmap()
-    agents = processor.agent_ranking()
-    tags = processor.tag_distribution()
-    channels = processor.channel_distribution()
-    bots = processor.bot_stats()
-
-    insights: list = []
-    try:
-        insights = await generate_insights(kpis, heatmap, agents, tags, bots, request.days)
-    except Exception as e:
-        errors.append({"step": "insights", "error": str(e)})
-
-    status = "ok" if not errors else "partial"
-    return AnalyticsResult(
-        status=status,
-        kpis=kpis,
-        volume_series=volume,
-        hourly_heatmap=heatmap,
-        agent_ranking=agents,
-        tag_distribution=tags,
-        channel_distribution=channels,
-        bot_stats=bots,
-        insights=insights,
-        errors=errors,
-    )
-
-
-@app.get("/analytics/report/stream")
-async def analytics_report_stream(request: Request, talk_api_key: str, organization_id: str, days: int = 3):
-    import json as _json
-    from fastapi.responses import StreamingResponse
-
-    async def _generate():
-        from client.talk_client import TalkClient as _TalkClient
-        client = _TalkClient(talk_api_key, organization_id)
-        errors: list = []
-
-        def evt(payload: dict) -> str:
-            return f"data: {_json.dumps(payload)}\n\n"
-
-        yield evt({"type": "progress", "pct": 5, "step": "fetch",
-                   "label": "Conectando à Talk API..."})
-
-        # ── Etapa 1: buscar dados (paralelo, cancelável) ─────────────────────
-        # Callback síncrono chamado por get_chats a cada página ou dia processado
-        _sp = {"done": 0, "total": 0, "active": False}
-
-        def on_chat_progress(done: int, total: int) -> None:
-            _sp["done"] = done
-            _sp["total"] = total
-            _sp["active"] = True
-
-        async def _do_fetch():
-            return await _asyncio.gather(
-                client.get_chats(days, on_progress=on_chat_progress),
-                client.get_ratings(days),
-                client.get_online_members(),
-            )
-
-        fetch_task = _asyncio.create_task(_do_fetch())
-        while not fetch_task.done():
-            if await request.is_disconnected():
-                fetch_task.cancel()
-                return
-            await _asyncio.sleep(0.4)
-            done, total, active = _sp["done"], _sp["total"], _sp["active"]
-            if not active:
-                # ainda contando
-                yield evt({"type": "progress", "pct": 7, "step": "fetch",
-                           "label": "Contando conversas finalizadas..."})
-            elif done == 0:
-                # contagem concluída, fetch ainda não começou
-                yield evt({"type": "progress", "pct": 10, "step": "fetch",
-                           "label": f"{total} conversas encontradas, buscando..."})
-            else:
-                # fetch em andamento com progresso real
-                pct = 12 + (done / total) * 33 if total > 0 else 12
-                if total > days:
-                    label = f"Buscando conversas... {done}/{total}"
-                else:
-                    label = f"Amostrando período... dia {done}/{total}"
-                yield evt({"type": "progress", "pct": round(pct, 1), "step": "fetch", "label": label})
-
-        try:
-            chats, ratings, members = fetch_task.result()
-        except _asyncio.CancelledError:
-            return
-        except Exception as e:
-            errors.append({"step": "fetch", "error": str(e)})
-            yield evt({"type": "error", "step": "fetch", "message": str(e)})
-            return
-
-        if await request.is_disconnected():
-            return
-
-        if not chats:
-            yield evt({"type": "error", "step": "fetch",
-                       "message": f"Nenhuma conversa finalizada encontrada nos últimos {days} dias. "
-                                  "Verifique se o período selecionado contém atendimentos encerrados."})
-            return
-
-        sampling_note = f" (amostragem diária)" if _sp["active"] else ""
-        yield evt({"type": "progress", "pct": 45, "step": "fetch",
-                   "label": f"{len(chats)} conversas e {len(ratings)} avaliações carregadas{sampling_note}"})
-
-        # ── Etapa 2: processar métricas ──────────────────────────────────────
-        processor = AnalyticsProcessor(chats, ratings, members)
-        kpis    = processor.compute_kpis()
-        volume  = processor.volume_series()
-        heatmap = processor.hourly_heatmap()
-        agents  = processor.agent_ranking()
-        tags    = processor.tag_distribution()
-        channels = processor.channel_distribution()
-        bots    = processor.bot_stats()
-
-        if await request.is_disconnected():
-            return
-
-        yield evt({"type": "progress", "pct": 60, "step": "process",
-                   "label": "Métricas calculadas"})
-
-        # ── Etapa 3: insights com IA (cancelável) ────────────────────────────
-        yield evt({"type": "progress", "pct": 65, "step": "ai",
-                   "label": "Gerando insights com IA..."})
-
-        insights: list = []
-        ai_task = _asyncio.create_task(generate_insights(kpis, heatmap, agents, tags, bots, days))
-        while not ai_task.done():
-            if await request.is_disconnected():
-                ai_task.cancel()
-                return
-            await _asyncio.sleep(0.3)
-
-        try:
-            insights = ai_task.result()
-        except _asyncio.CancelledError:
-            return
-        except Exception as e:
-            errors.append({"step": "insights", "error": str(e)})
-
-        if await request.is_disconnected():
-            return
-
-        yield evt({"type": "progress", "pct": 95, "step": "render",
-                   "label": "Finalizando relatório..."})
-
-        # ── Resultado final ──────────────────────────────────────────────────
-        result = AnalyticsResult(
-            status="ok" if not errors else "partial",
-            kpis=kpis, volume_series=volume, hourly_heatmap=heatmap,
-            agent_ranking=agents, tag_distribution=tags,
-            channel_distribution=channels, bot_stats=bots,
-            insights=insights, errors=errors,
-        )
-        yield evt({"type": "done", "data": result.model_dump()})
-
-    return StreamingResponse(
-        _generate(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-
-
-@app.get("/analytics/export/pdf")
-async def analytics_export_pdf(talk_api_key: str, organization_id: str, days: int = 3):
-    from fastapi.responses import Response as _Response
-    req = AnalyticsRequest(talk_api_key=talk_api_key, organization_id=organization_id, days=days)
-    result = await analytics_report(req)
-    data = result.model_dump()
-    try:
-        pdf_bytes = export_report_pdf(data)
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"detail": str(e)})
-    return _Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=relatorio-atendimento.pdf"},
-    )
-
 
 @app.post("/onboarding/undo")
 async def onboarding_undo(request: UndoRequest):
@@ -444,3 +235,44 @@ async def onboarding_undo(request: UndoRequest):
         "deleted_chatbot": deleted_chatbot,
         "errors": errors,
     }
+
+
+
+# ── Simulador de conversa pós-onboarding ──────────────────────────────────────
+
+_DEMO_BOT_REPLIES = [
+    "Olá! Seja bem-vindo. Em que posso ajudar você hoje?",
+    "Entendido! Estou te direcionando para o setor correto. Um momento.",
+    "Claro, posso te ajudar com isso! Qual é o seu nome para eu registrar o atendimento?",
+    "Obrigado pelas informações! Um dos nossos atendentes vai te chamar em instantes.",
+]
+_demo_reply_idx = {"i": 0}
+
+@app.post("/onboarding/simulate")
+async def simulate_conversation(request: SimulateRequest):
+    if request.is_demo:
+        idx = _demo_reply_idx["i"] % len(_DEMO_BOT_REPLIES)
+        _demo_reply_idx["i"] += 1
+        return {"message": _DEMO_BOT_REPLIES[idx]}
+
+    from openai import AsyncOpenAI
+
+    system = f"""Você é {request.chatbot_name}, o assistente virtual de {request.business_name}.
+{f'Abordagem: {request.chatbot_approach}' if request.chatbot_approach else ''}
+
+Simule como este chatbot responderia a um cliente real. Seja conciso (máximo 2-3 frases).
+Não saia do personagem. Use linguagem natural e amigável."""
+
+    msgs = [{"role": "system", "content": system}]
+    if request.welcome_message and len(request.messages) <= 1:
+        msgs.append({"role": "assistant", "content": request.welcome_message})
+    for m in request.messages:
+        msgs.append({"role": m.role, "content": m.content})
+
+    ai = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    resp = await ai.chat.completions.create(
+        model="gpt-4o",
+        messages=msgs,
+        max_tokens=200,
+    )
+    return {"message": resp.choices[0].message.content}

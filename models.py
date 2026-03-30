@@ -166,20 +166,16 @@ class UndoResult(BaseModel):
     errors: list[StepError] = Field(default_factory=list)
 
 
-class AnalyticsRequest(BaseModel):
-    talk_api_key: str
-    organization_id: str
-    days: int = 15
+class SimulateMessage(BaseModel):
+    role: str
+    content: str
 
 
-class AnalyticsResult(BaseModel):
-    status: OnboardingStatus
-    kpis: dict = Field(default_factory=dict)
-    volume_series: list[dict] = Field(default_factory=list)
-    hourly_heatmap: list[dict] = Field(default_factory=list)
-    agent_ranking: list[dict] = Field(default_factory=list)
-    tag_distribution: list[dict] = Field(default_factory=list)
-    channel_distribution: list[dict] = Field(default_factory=list)
-    bot_stats: dict = Field(default_factory=dict)
-    insights: list[dict] = Field(default_factory=list)
-    errors: list[StepError] = Field(default_factory=list)
+class SimulateRequest(BaseModel):
+    chatbot_name: str
+    chatbot_approach: str | None = None
+    business_name: str
+    welcome_message: str | None = None
+    messages: list[SimulateMessage]
+    is_demo: bool = False
+
