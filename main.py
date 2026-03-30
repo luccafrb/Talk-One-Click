@@ -231,7 +231,7 @@ async def analytics_report(request: AnalyticsRequest) -> AnalyticsResult:
 
 
 @app.get("/analytics/report/stream")
-async def analytics_report_stream(talk_api_key: str, organization_id: str, days: int = 15):
+async def analytics_report_stream(request: Request, talk_api_key: str, organization_id: str, days: int = 15):
     import json as _json
     from fastapi.responses import StreamingResponse
 
@@ -246,16 +246,28 @@ async def analytics_report_stream(talk_api_key: str, organization_id: str, days:
         yield evt({"type": "progress", "pct": 5, "step": "fetch",
                    "label": "Conectando à Talk API..."})
 
-        # ── Etapa 1: buscar dados (paralelo) ────────────────────────────────
+        # ── Etapa 1: buscar dados (paralelo, cancelável) ─────────────────────
+        fetch_task = _asyncio.create_task(_asyncio.gather(
+            client.get_chats(days),
+            client.get_ratings(days),
+            client.get_online_members(),
+        ))
+        while not fetch_task.done():
+            if await request.is_disconnected():
+                fetch_task.cancel()
+                return
+            await _asyncio.sleep(0.3)
+
         try:
-            chats, ratings, members = await _asyncio.gather(
-                client.get_chats(days),
-                client.get_ratings(days),
-                client.get_online_members(),
-            )
+            chats, ratings, members = fetch_task.result()
+        except _asyncio.CancelledError:
+            return
         except Exception as e:
             errors.append({"step": "fetch", "error": str(e)})
             yield evt({"type": "error", "step": "fetch", "message": str(e)})
+            return
+
+        if await request.is_disconnected():
             return
 
         yield evt({"type": "progress", "pct": 45, "step": "fetch",
@@ -271,17 +283,33 @@ async def analytics_report_stream(talk_api_key: str, organization_id: str, days:
         channels = processor.channel_distribution()
         bots    = processor.bot_stats()
 
+        if await request.is_disconnected():
+            return
+
         yield evt({"type": "progress", "pct": 60, "step": "process",
                    "label": "Métricas calculadas"})
 
-        # ── Etapa 3: insights com IA ─────────────────────────────────────────
+        # ── Etapa 3: insights com IA (cancelável) ────────────────────────────
         yield evt({"type": "progress", "pct": 65, "step": "ai",
                    "label": "Gerando insights com IA..."})
+
         insights: list = []
+        ai_task = _asyncio.create_task(generate_insights(kpis, heatmap, agents, tags, bots, days))
+        while not ai_task.done():
+            if await request.is_disconnected():
+                ai_task.cancel()
+                return
+            await _asyncio.sleep(0.3)
+
         try:
-            insights = await generate_insights(kpis, heatmap, agents, tags, bots, days)
+            insights = ai_task.result()
+        except _asyncio.CancelledError:
+            return
         except Exception as e:
             errors.append({"step": "insights", "error": str(e)})
+
+        if await request.is_disconnected():
+            return
 
         yield evt({"type": "progress", "pct": 95, "step": "render",
                    "label": "Finalizando relatório..."})

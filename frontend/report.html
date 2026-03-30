@@ -799,7 +799,15 @@
     <div id="progress-bar-wrap">
       <div class="progress-label-row">
         <span class="progress-label" id="progress-label">Iniciando...</span>
-        <span class="progress-pct" id="progress-pct">0%</span>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="progress-pct" id="progress-pct">0%</span>
+          <button id="btn-cancel" onclick="cancelLoad()"
+            style="font-size:12px;padding:3px 10px;border-radius:6px;border:1px solid #3a3d42;background:#1a1c20;color:#ACADBD;cursor:pointer;transition:all 0.15s;"
+            onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444';"
+            onmouseout="this.style.borderColor='#3a3d42';this.style.color='#ACADBD';">
+            Cancelar
+          </button>
+        </div>
       </div>
       <div class="progress-track">
         <div class="progress-fill" id="progress-fill"></div>
@@ -973,7 +981,22 @@
         const el = document.getElementById('step-' + s);
         el.classList.remove('active', 'done', 'step-error');
       });
+      document.getElementById('btn-cancel').style.display = 'inline-block';
       document.getElementById('progress-bar-wrap').classList.add('visible');
+    }
+
+    function cancelLoad() {
+      if (_activeEs) {
+        _activeEs.close();   // fecha SSE → backend detecta desconexão e cancela
+        _activeEs = null;
+      }
+      document.getElementById('btn-cancel').style.display = 'none';
+      document.getElementById('progress-bar-wrap').classList.remove('visible');
+      document.getElementById('skeleton-loading').classList.remove('visible');
+      // Se não há conteúdo ainda, volta para tela em branco sem erro
+      if (!reportData) {
+        document.getElementById('error-container').classList.remove('visible');
+      }
     }
 
     function progressDone() {
@@ -982,6 +1005,7 @@
       fill.classList.add('done');
       document.getElementById('progress-pct').textContent = '100%';
       document.getElementById('progress-label').textContent = 'Concluído!';
+      document.getElementById('btn-cancel').style.display = 'none';
       STEPS.forEach(s => {
         const el = document.getElementById('step-' + s);
         el.classList.remove('active', 'step-error');
