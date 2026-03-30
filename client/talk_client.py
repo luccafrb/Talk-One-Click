@@ -112,23 +112,24 @@ class TalkClient:
         while cur < now:
             if (cur.year, cur.month, cur.day, cur.hour) not in covered:
                 uncovered.append(cur)
-            cur += timedelta(hours=1)
+            cur += timedelta(hours=5)
 
         total_uncovered = len(uncovered)
         logger.info("[analytics] fase 2: %d horas sem cobertura para amostrar", total_uncovered)
 
         sampled: list[dict] = []
         for i, hour_dt in enumerate(uncovered):
-            hour_end = hour_dt + timedelta(hours=1)
+            window_end = hour_dt + timedelta(hours=5)
             data = await self.get(
                 f"/v1/chats/?DateStartCreatedAtUTC={hour_dt.isoformat()}"
-                f"&DateEndCreatedAtUTC={hour_end.isoformat()}&Skip=0&Take=10"
+                f"&DateEndCreatedAtUTC={window_end.isoformat()}&Skip=0&Take=10"
             )
             items = data if isinstance(data, list) else data.get("items", data.get("data", []))
             sampled.extend(items)
             if items:
-                logger.info("[analytics] fase 2 — %s: %d chats amostrados",
-                            hour_dt.strftime("%Y-%m-%d %H:00"), len(items))
+                logger.info("[analytics] fase 2 — %s a %s: %d chats amostrados",
+                            hour_dt.strftime("%Y-%m-%d %H:00"),
+                            window_end.strftime("%H:00"), len(items))
             if on_progress is not None:
                 on_progress(i + 1, total_uncovered)
 
