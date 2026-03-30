@@ -585,6 +585,132 @@
       margin-bottom: 4px;
     }
 
+    /* ── Progress Bar ── */
+    #progress-bar-wrap {
+      display: none;
+      margin-bottom: 28px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    #progress-bar-wrap.visible {
+      display: block;
+    }
+
+    .progress-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .progress-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .progress-pct {
+      font-size: 12px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: #2a2d32;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--accent);
+      transition: width 0.4s ease, background 0.3s;
+      width: 0%;
+    }
+
+    .progress-fill.done {
+      background: var(--success);
+    }
+
+    .progress-fill.error {
+      background: var(--danger);
+    }
+
+    .progress-steps {
+      display: flex;
+      gap: 0;
+    }
+
+    .progress-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      position: relative;
+    }
+
+    .progress-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      right: -50%;
+      height: 2px;
+      background: #2a2d32;
+      z-index: 0;
+    }
+
+    .progress-step.done:not(:last-child)::after {
+      background: var(--accent);
+    }
+
+    .step-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #2a2d32;
+      background: var(--card);
+      z-index: 1;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .progress-step.active .step-dot {
+      border-color: var(--accent);
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(76,112,218,0.2);
+    }
+
+    .progress-step.done .step-dot {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .progress-step.step-error .step-dot {
+      border-color: var(--danger);
+      background: var(--danger);
+    }
+
+    .step-name {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .progress-step.active .step-name,
+    .progress-step.done .step-name {
+      color: var(--text);
+    }
+
     /* ── Loading overlay ── */
     #skeleton-loading {
       display: none;
@@ -666,6 +792,35 @@
       <div class="error-box">
         <strong>Erro ao carregar relatório</strong>
         <span id="error-message"></span>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div id="progress-bar-wrap">
+      <div class="progress-label-row">
+        <span class="progress-label" id="progress-label">Iniciando...</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-steps">
+        <div class="progress-step" id="step-fetch">
+          <div class="step-dot"></div>
+          <span class="step-name">Buscando conversas</span>
+        </div>
+        <div class="progress-step" id="step-process">
+          <div class="step-dot"></div>
+          <span class="step-name">Processando métricas</span>
+        </div>
+        <div class="progress-step" id="step-ai">
+          <div class="step-dot"></div>
+          <span class="step-name">Gerando insights IA</span>
+        </div>
+        <div class="progress-step" id="step-render">
+          <div class="step-dot"></div>
+          <span class="step-name">Renderizando</span>
+        </div>
       </div>
     </div>
 
@@ -791,6 +946,86 @@
       document.getElementById('app').classList.add('visible');
     }
 
+    // ── Progress Bar ─────────────────────────────────────────────────────────
+
+    const STEPS = ['fetch', 'process', 'ai', 'render'];
+    let _progressTimer = null;
+
+    function setProgress(pct, label, activeStep) {
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-pct').textContent = Math.round(pct) + '%';
+      document.getElementById('progress-label').textContent = label;
+      STEPS.forEach((s, i) => {
+        const el = document.getElementById('step-' + s);
+        el.classList.remove('active', 'done', 'step-error');
+        if (s === activeStep) el.classList.add('active');
+        else if (STEPS.indexOf(activeStep) > i) el.classList.add('done');
+      });
+    }
+
+    function progressDone() {
+      clearInterval(_progressTimer);
+      const fill = document.getElementById('progress-fill');
+      fill.style.width = '100%';
+      fill.classList.add('done');
+      document.getElementById('progress-pct').textContent = '100%';
+      document.getElementById('progress-label').textContent = 'Concluído!';
+      STEPS.forEach(s => {
+        const el = document.getElementById('step-' + s);
+        el.classList.remove('active', 'step-error');
+        el.classList.add('done');
+      });
+      setTimeout(() => {
+        document.getElementById('progress-bar-wrap').classList.remove('visible');
+      }, 900);
+    }
+
+    function progressError(stepId) {
+      clearInterval(_progressTimer);
+      const fill = document.getElementById('progress-fill');
+      fill.classList.add('error');
+      document.getElementById('progress-label').textContent = 'Falha no carregamento';
+      if (stepId) {
+        const el = document.getElementById('step-' + stepId);
+        el.classList.remove('active');
+        el.classList.add('step-error');
+      }
+    }
+
+    function startProgressSimulation() {
+      // Simula avanço enquanto aguarda o servidor:
+      // 0–25%  → buscando conversas (fase mais longa)
+      // 25–60% → processando métricas
+      // 60–85% → IA gerando insights
+      // 85–95% → aguardando resposta final
+      const stages = [
+        { until: 25, step: 'fetch',   label: 'Buscando conversas e avaliações...',   tickMs: 120, inc: 0.5 },
+        { until: 60, step: 'process', label: 'Processando métricas de atendimento...', tickMs: 80,  inc: 0.7 },
+        { until: 85, step: 'ai',      label: 'Gerando insights com IA...',            tickMs: 100, inc: 0.4 },
+        { until: 95, step: 'render',  label: 'Aguardando resposta do servidor...',    tickMs: 200, inc: 0.2 },
+      ];
+      let pct = 0;
+      let stageIdx = 0;
+
+      clearInterval(_progressTimer);
+
+      function tick() {
+        const s = stages[stageIdx];
+        if (!s) return;
+        pct = Math.min(pct + s.inc, s.until);
+        setProgress(pct, s.label, s.step);
+        if (pct >= s.until && stageIdx < stages.length - 1) {
+          stageIdx++;
+          clearInterval(_progressTimer);
+          _progressTimer = setInterval(tick, stages[stageIdx].tickMs);
+        }
+      }
+
+      setProgress(0, stages[0].label, stages[0].step);
+      document.getElementById('progress-bar-wrap').classList.add('visible');
+      _progressTimer = setInterval(tick, stages[0].tickMs);
+    }
+
     // ── Skeleton / Content toggling ──────────────────────────────────────────
 
     function showSkeleton() {
@@ -820,6 +1055,7 @@
       currentDays = days;
 
       showSkeleton();
+      startProgressSimulation();
 
       try {
         const res = await fetch(`${API}/analytics/report`, {
@@ -838,15 +1074,19 @@
             const errData = await res.json();
             errMsg = errData.detail || errData.message || errMsg;
           } catch (_) {}
+          progressError('fetch');
           throw new Error(errMsg);
         }
 
         reportData = await res.json();
 
+        setProgress(95, 'Renderizando dashboard...', 'render');
         renderAll(reportData);
+        progressDone();
         showContent();
 
       } catch (err) {
+        progressError(null);
         showError(err.message || 'Falha ao conectar com o servidor.');
       }
     }
