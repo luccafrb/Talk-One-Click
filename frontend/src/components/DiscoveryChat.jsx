@@ -92,51 +92,58 @@ function DraftField({ icon, label, value, chips }) {
 
 function DraftPanel({ draft, ready, loading, onFinalize }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.95rem', marginBottom: 8 }}>
-          O que entendemos até agora
-        </p>
-        <ConfidenceBar value={draft?.confidence ?? 0} />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.95rem', marginBottom: 8 }}>
+            O que entendemos até agora
+          </p>
+          <ConfidenceBar value={draft?.confidence ?? 0} />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {DRAFT_FIELDS.map(({ key, label, icon }) => (
+            <DraftField key={key} icon={icon} label={label} value={formatValue(key, draft?.[key])} />
+          ))}
+          <DraftField icon="🏢" label="Setores sugeridos" chips={draft?.suggested_sectors ?? []} />
+          <DraftField icon="🏷️" label="Etiquetas sugeridas" chips={draft?.suggested_labels ?? []} />
+          <DraftField
+            icon="🤖"
+            label="Chatbot"
+            value={draft?.create_chatbot === null || draft?.create_chatbot === undefined ? null : draft.create_chatbot ? 'Sim' : 'Não'}
+          />
+          {draft?.create_chatbot && (
+            <DraftField icon="💬" label="Descrição do chatbot" value={draft?.chatbot_description ?? null} />
+          )}
+          <DraftField
+            icon="📡"
+            label="Canal"
+            value={draft?.create_channel === null || draft?.create_channel === undefined ? null
+              : draft.create_channel ? (draft.channel_name || 'Sim') : 'Não'}
+          />
+          <DraftField icon="👥" label="Atendentes convidados" chips={draft?.member_emails ?? []} />
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {DRAFT_FIELDS.map(({ key, label, icon }) => (
-          <DraftField key={key} icon={icon} label={label} value={formatValue(key, draft?.[key])} />
-        ))}
-        <DraftField icon="🏢" label="Setores sugeridos" chips={draft?.suggested_sectors ?? []} />
-        <DraftField icon="🏷️" label="Etiquetas sugeridas" chips={draft?.suggested_labels ?? []} />
-        <DraftField
-          icon="🤖"
-          label="Chatbot"
-          value={draft?.create_chatbot === null || draft?.create_chatbot === undefined ? null : draft.create_chatbot ? 'Sim' : 'Não'}
-        />
-        {draft?.create_chatbot && (
-          <DraftField icon="💬" label="Descrição do chatbot" value={draft?.chatbot_description ?? null} />
-        )}
-        <DraftField
-          icon="📡"
-          label="Canal"
-          value={draft?.create_channel === null || draft?.create_channel === undefined ? null
-            : draft.create_channel ? (draft.channel_name || 'Sim') : 'Não'}
-        />
-        <DraftField icon="👥" label="Atendentes convidados" chips={draft?.member_emails ?? []} />
-      </div>
-
-      {ready && (
+      <div style={{ marginTop: 'auto', paddingTop: 16 }}>
         <button
           onClick={onFinalize}
-          disabled={loading}
+          disabled={loading || !ready}
           style={{
-            marginTop: 8, width: '100%', padding: '10px 14px', borderRadius: 6,
-            background: loading ? '#16a34a99' : '#22c55e', color: 'white',
-            fontWeight: 600, fontSize: 13, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+            width: '100%', padding: '14px', borderRadius: 8,
+            background: loading || !ready ? '#2F3238' : '#4C70DA',
+            color: loading || !ready ? '#8E92A4' : '#FFFFFF',
+            fontWeight: 600, fontSize: 14, border: 'none', cursor: loading || !ready ? 'not-allowed' : 'pointer',
             transition: 'background 0.2s',
+            boxShadow: loading || !ready ? 'none' : '0 4px 12px rgba(76,112,218,0.3)',
+            opacity: ready ? 1 : 0.5,
           }}
+          onMouseEnter={e => { if (!loading && ready) e.currentTarget.style.background = '#3d5ec7' }}
+          onMouseLeave={e => { if (!loading && ready) e.currentTarget.style.background = '#4C70DA' }}
         >
-          {loading ? 'Finalizando...' : 'Revisar e configurar'}
+          {loading ? 'Finalizando...' : 'Revisar e Configurar →'}
         </button>
-      )}
+      </div>
     </div>
   )
 }
@@ -243,7 +250,7 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
   }
 
   return (
-    <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', background: 'var(--talk-bg-primary)' }}>
+    <div className="page-transition min-h-svh flex flex-col" style={{ background: 'var(--talk-bg-primary)' }}>
       <style>{`
         @keyframes discovery-pulse {
           0%, 100% { opacity: 0.3; transform: scale(0.8); }
@@ -251,66 +258,84 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
         }
         .discovery-grid {
           display: grid;
-          grid-template-columns: 3fr 2fr;
+          grid-template-columns: 1fr 340px;
           gap: 24px;
           align-items: start;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
           .discovery-grid { grid-template-columns: 1fr; }
           .discovery-draft { order: -1; }
         }
       `}</style>
 
       {/* Header */}
-      <div style={{ padding: '24px 24px 0' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <div style={{ padding: '32px 24px 16px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ width: '100%', maxWidth: 1000, display: 'flex', gap: 24, alignItems: 'flex-start' }}>
           <button
             onClick={onBack}
-            style={{ color: '#FFFFFF', fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 16, padding: 0 }}
+            style={{ position: 'fixed', top: 20, left: 24, zIndex: 100, background: 'rgba(26,28,32,0.8)', border: '1px solid #2A2D32', borderRadius: 8, cursor: 'pointer', color: '#8E92A4', fontSize: 13, padding: '8px 14px', display: 'flex', gap: 6, alignItems: 'center', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = '#4C70DA'; e.currentTarget.style.background = '#1A1C20' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#8E92A4'; e.currentTarget.style.borderColor = '#2A2D32'; e.currentTarget.style.background = 'rgba(26,28,32,0.8)' }}
           >
-            ← Voltar
+            <span style={{ fontSize: 16, lineHeight: 1 }}>←</span> Voltar
           </button>
-          <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--talk-text-primary)', margin: 0 }}>
-            Talk One-Click
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--talk-text-muted)', margin: '4px 0 0' }}>
-            Converse com nossa IA e conte-nos sobre o seu negócio.
-          </p>
+          
+          <div>
+            <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', color: '#FFFFFF', margin: '0 0 6px' }}>
+              Discovery por IA
+            </h1>
+            <p style={{ fontSize: 15, color: '#8E92A4', margin: 0, lineHeight: 1.5 }}>
+              Descreva sua operação e deixe nossa Inteligência Artificial montar a configuração ideal para você.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Main */}
-      <div style={{ flex: 1, padding: '20px 24px 24px', display: 'flex', justifyContent: 'center' }}>
-        <div style={{ width: '100%', maxWidth: 1100 }} className="discovery-grid">
+      <div style={{ flex: 1, padding: '16px 24px 32px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ width: '100%', maxWidth: 1000 }} className="discovery-grid">
 
           {/* Chat */}
-          <Card style={{ display: 'flex', flexDirection: 'column', height: 'calc(100svh - 210px)', minHeight: 420 }}>
-            <CardContent style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {messages.map((msg, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                  <div style={{
-                    maxWidth: '85%', padding: '10px 14px',
-                    borderRadius: 8,
-                    borderBottomLeftRadius: msg.role === 'assistant' ? 0 : 8,
-                    borderBottomRightRadius: msg.role === 'user' ? 0 : 8,
-                    background: msg.role === 'user' ? 'var(--talk-accent)' : 'var(--talk-bg-hover)',
-                    color: msg.role === 'user' ? '#FFFFFF' : 'var(--talk-text-primary)',
-                    fontSize: 14, lineHeight: 1.5,
-                    wordBreak: 'break-word',
-                  }}>
-                    {msg.content}
+          <Card style={{ display: 'flex', flexDirection: 'column', height: 'calc(100svh - 180px)', minHeight: 480, background: 'var(--talk-bg-primary)', border: '1px solid var(--talk-border)', borderRadius: 12, overflow: 'hidden' }}>
+            <CardContent style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {messages.map((msg, i) => {
+                const isUser = msg.role === 'user';
+                return (
+                  <div key={i} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+                    {!isUser && (
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #4C70DA, #3d5ec7)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12, flexShrink: 0, alignSelf: 'flex-end', fontSize: 16 }}>
+                        ✨
+                      </div>
+                    )}
+                    <div style={{
+                      maxWidth: '75%', padding: '12px 16px',
+                      borderRadius: 12,
+                      borderBottomLeftRadius: !isUser ? 4 : 12,
+                      borderBottomRightRadius: isUser ? 4 : 12,
+                      background: isUser ? '#4C70DA' : '#1A1C20',
+                      border: isUser ? 'none' : '1px solid #2A2D32',
+                      color: isUser ? '#FFFFFF' : '#E0E2E6',
+                      fontSize: 15, lineHeight: 1.5,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      wordBreak: 'break-word',
+                    }}>
+                      {msg.content}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
               {loading && (
-                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #4C70DA, #3d5ec7)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12, flexShrink: 0, fontSize: 16 }}>
+                    ✨
+                  </div>
                   <TypingIndicator />
                 </div>
               )}
               <div ref={bottomRef} />
             </CardContent>
 
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #2a2d32', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ padding: '16px 20px', background: '#1A1C20', borderTop: '1px solid #2a2d32', display: 'flex', gap: 12, alignItems: 'center' }}>
               <input
                 ref={inputRef}
                 value={input}
@@ -319,11 +344,12 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
                 disabled={loading}
-                placeholder="Digite sua resposta..."
+                placeholder="Exemplo: 'somos uma assistência técnica, queremos suporte a devoluções...'"
                 style={{
-                  flex: 1, background: 'var(--talk-bg-primary)', border: `1px solid ${inputFocused ? 'var(--talk-accent)' : 'var(--talk-border)'}`,
-                  borderRadius: 6, padding: '10px 14px', color: 'var(--talk-text-primary)', fontSize: 14,
-                  outline: 'none', transition: 'border-color 0.2s',
+                  flex: 1, background: '#141619', border: `1px solid ${inputFocused ? '#4C70DA' : '#2A2D32'}`,
+                  borderRadius: 8, padding: '12px 16px', color: '#FFFFFF', fontSize: 15,
+                  outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s',
+                  boxShadow: inputFocused ? '0 0 0 2px rgba(76,112,218,0.2)' : 'none',
                   opacity: loading ? 0.6 : 1,
                 }}
               />
@@ -331,12 +357,15 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
                 style={{
-                  background: loading || !input.trim() ? 'var(--talk-bg-hover)' : 'var(--talk-accent)',
-                  color: loading || !input.trim() ? 'var(--talk-text-muted)' : 'white',
-                  border: 'none', borderRadius: 6, padding: '10px 18px',
-                  fontWeight: 600, fontSize: 14, cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.2s, color 0.2s', flexShrink: 0,
+                  background: loading || !input.trim() ? '#2F3238' : '#4C70DA',
+                  color: loading || !input.trim() ? '#8E92A4' : 'white',
+                  border: 'none', borderRadius: 8, padding: '12px 20px',
+                  fontWeight: 600, fontSize: 15, cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s', flexShrink: 0,
+                  boxShadow: loading || !input.trim() ? 'none' : '0 2px 8px rgba(76,112,218,0.3)',
                 }}
+                onMouseEnter={e => { if (!loading && input.trim()) e.currentTarget.style.background = '#3d5ec7' }}
+                onMouseLeave={e => { if (!loading && input.trim()) e.currentTarget.style.background = '#4C70DA' }}
               >
                 Enviar
               </button>
@@ -344,8 +373,8 @@ export default function DiscoveryChat({ onComplete, onBack, isDemoMode }) {
           </Card>
 
           {/* Draft panel */}
-          <Card className="discovery-draft">
-            <CardContent style={{ padding: '20px' }}>
+          <Card className="discovery-draft" style={{ background: '#1A1C20', border: '1px solid #2A2D32', borderRadius: 12, position: 'sticky', top: 24, height: 'calc(100svh - 180px)', minHeight: 480, display: 'flex', flexDirection: 'column' }}>
+            <CardContent style={{ padding: '24px', flex: 1, minHeight: 0 }}>
               <DraftPanel draft={draft} ready={ready} loading={finalizing} onFinalize={handleFinalize} />
             </CardContent>
           </Card>

@@ -53,12 +53,11 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
   return (
     <div style={{
       minHeight: '100svh',
+      background: '#141619',
       display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
       justifyContent: 'center',
-      padding: '24px 16px',
-      background: 'var(--talk-bg-primary)',
+      padding: '0 24px',
+      overflow: 'hidden',
     }}>
       {sharedConfigBanner && (
         <div style={{
@@ -150,113 +149,121 @@ export default function CredentialsGate({ onConnect, sharedConfigBanner, onDismi
       `}</style>
 
       <div className="cg-card" style={{
-        background: 'var(--talk-bg-secondary)',
-        border: `1px solid ${error ? 'var(--talk-error)' : 'var(--talk-border)'}`,
-        borderRadius: 12,
-        padding: '40px 36px',
         width: '100%',
-        maxWidth: 480,
-        boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-        transition: 'border-color 0.2s',
+        maxWidth: 540,
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        paddingTop: 80,
+        paddingBottom: 24,
+        boxSizing: 'border-box',
       }}>
-        {/* Logo / title */}
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{
-            fontWeight: 700,
-            fontSize: 32,
-            letterSpacing: '-0.02em',
-            lineHeight: 1.1,
-            color: 'var(--talk-text-primary)',
-            marginBottom: 8,
-          }}>
-            Talk One-Click
-          </h1>
-          <p style={{ color: 'var(--talk-text-muted)', fontSize: 15, lineHeight: 1.5, margin: 0 }}>
-            Conecte sua conta Talk para configurar sua empresa
-          </p>
-        </div>
+        {/* Scrollable Form Content */}
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
+          {/* Logo / title */}
+          <div>
+            <h1 style={{
+              fontWeight: 700,
+              fontSize: 28,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              color: '#FFFFFF',
+              marginBottom: 8,
+              marginTop: 16
+            }}>
+              Talk One-Click
+            </h1>
+            <p style={{ color: '#8E92A4', fontSize: 15, lineHeight: 1.5, margin: 0 }}>
+              Conecte sua conta Talk para configurar sua empresa.
+            </p>
+          </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* API Key */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--talk-text-primary)' }}>API Key</label>
-              <a href="https://rc-app-talk.umbler.com/profile" target="_blank" rel="noreferrer" className="cg-link">
-                Perfil → Tokens de Acesso ↗
-              </a>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '24px 20px', background: '#1A1C20', border: '1px solid #2A2D32', borderRadius: 12 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>Credenciais de Acesso</p>
+            {/* API Key */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <label style={{ fontSize: 14, fontWeight: 600, color: '#ACADBD' }}>API Key</label>
+                <a href="https://rc-app-talk.umbler.com/profile" target="_blank" rel="noreferrer" className="cg-link">
+                  Perfil → Tokens de Acesso ↗
+                </a>
+              </div>
+              <div style={{ position: 'relative' }}>
+                <input
+                  className={`cg-input${error ? ' cg-error' : ''}`}
+                  type={showKey ? 'text' : 'password'}
+                  placeholder="Cole sua chave de API aqui"
+                  value={apiKey}
+                  onChange={e => { setApiKey(e.target.value); setError(null) }}
+                  autoComplete="off"
+                  disabled={validating}
+                  style={{ paddingRight: 38 }}
+                />
+                <button type="button" className="cg-eye-btn" onClick={() => setShowKey(v => !v)} tabIndex={-1}>
+                  {showKey ? '🙈' : '👁'}
+                </button>
+              </div>
             </div>
-            <div style={{ position: 'relative' }}>
+
+            {/* Organization ID */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <label style={{ fontSize: 14, fontWeight: 600, color: '#ACADBD' }}>Organization ID</label>
+                <a href="https://rc-app-talk.umbler.com/preferences/organization" target="_blank" rel="noreferrer" className="cg-link">
+                  Configurações ↗
+                </a>
+              </div>
               <input
                 className={`cg-input${error ? ' cg-error' : ''}`}
-                type={showKey ? 'text' : 'password'}
-                placeholder="Cole sua chave de API aqui"
-                value={apiKey}
-                onChange={e => { setApiKey(e.target.value); setError(null) }}
+                type="text"
+                placeholder="Ex: acgO02Im8Z46U3YA"
+                value={orgId}
+                onChange={e => { setOrgId(e.target.value); setError(null) }}
                 autoComplete="off"
                 disabled={validating}
-                style={{ paddingRight: 38 }}
               />
-              <button type="button" className="cg-eye-btn" onClick={() => setShowKey(v => !v)} tabIndex={-1}>
-                {showKey ? '🙈' : '👁'}
-              </button>
             </div>
-          </div>
 
-          {/* Organization ID */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--talk-text-primary)' }}>Organization ID</label>
-              <a href="https://rc-app-talk.umbler.com/preferences/organization" target="_blank" rel="noreferrer" className="cg-link">
-                Configurações da organização ↗
-              </a>
-            </div>
-            <input
-              className={`cg-input${error ? ' cg-error' : ''}`}
-              type="text"
-              placeholder="Ex: acgO02Im8Z46U3YA"
-              value={orgId}
-              onChange={e => { setOrgId(e.target.value); setError(null) }}
-              autoComplete="off"
-              disabled={validating}
-            />
-          </div>
+            {/* Error message */}
+            {error && (
+              <div style={{
+                background: 'rgba(239,68,68,0.08)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                fontSize: 13,
+                color: '#f87171',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+                <span style={{flexShrink: 0}}>✕</span>
+                {error}
+              </div>
+            )}
+            
+            <p style={{ textAlign: 'center', fontSize: 12, color: '#6b7280', margin: 0 }}>
+              🔒 Suas credenciais não são armazenadas após a sessão.
+            </p>
+          </form>
+        </div>
 
-          {/* Error message */}
-          {error && (
-            <div style={{
-              background: 'rgba(239,68,68,0.08)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 8,
-              padding: '10px 14px',
-              fontSize: 13,
-              color: '#f87171',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}>
-              <span style={{ flexShrink: 0 }}>✕</span>
-              {error}
-            </div>
-          )}
-
+        {/* Bottom Navbar */}
+        <div style={{ display: 'flex', gap: 12, marginTop: 16, flexShrink: 0 }}>
           <button
-            type="submit"
+            onClick={handleSubmit}
             className="cg-btn-connect"
             disabled={!canConnect}
-            style={{ marginTop: 4 }}
+            style={{ width: '100%', padding: '14px', borderRadius: 8, fontWeight: 600, fontSize: 15 }}
           >
             {validating ? (
               <>
                 <div className="cg-spinner" />
                 Verificando credenciais...
               </>
-            ) : 'Conectar →'}
+            ) : 'Conectar API →'}
           </button>
-        </form>
-
-        <p style={{ textAlign: 'center', fontSize: 12, color: '#6b7280', marginTop: 20, marginBottom: 0 }}>
-          🔒 Suas credenciais não são armazenadas.
-        </p>
+        </div>
       </div>
     </div>
   )

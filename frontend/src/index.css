@@ -128,14 +128,30 @@
 }
 
 /* ── Body ── */
-body {
-  background-color: var(--talk-bg-primary);
+body, #root {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll; /* previne salto na tela quando scrollbar aparece */
 }
 
-#root {
-  min-height: 100svh;
-  position: relative;
+/* ── Animação de transição de página (fade in) ── */
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
+
+.page-transition {
+  animation: pageFadeIn 0.25s ease-out forwards;
+  will-change: opacity;
+}
+
 
 /* ── Cards: estilo Talk estrutural ── */
 [data-slot="card"] {
