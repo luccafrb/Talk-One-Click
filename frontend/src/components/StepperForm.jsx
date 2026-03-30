@@ -61,6 +61,8 @@ const INITIAL = {
   chatbot_description: '',
   create_channel: false,
   channel_name: '',
+  invite_members: false,
+  member_emails_raw: '',
 }
 
 function ProgressBar({ step }) {
@@ -378,10 +380,13 @@ export default function StepperForm({ initialForm, onSubmit, onBack, aiFilledFie
   }
 
   function handleSubmit() {
+    const member_emails = form.invite_members
+      ? form.member_emails_raw.split(/[\n,]/).map(e => e.trim()).filter(Boolean)
+      : []
     onSubmit({
       ...form,
-      // Normalize label_items: remove empties
       label_items: form.label_items.filter(l => l.name.trim()),
+      member_emails,
     })
   }
 
@@ -601,6 +606,30 @@ export default function StepperForm({ initialForm, onSubmit, onBack, aiFilledFie
                   onBlur={e => { e.currentTarget.style.borderColor = '#2a2d32' }}
                 />
               </ToggleSection>
+
+              <ToggleSection
+                checked={form.invite_members}
+                onChange={e => setField('invite_members', e.target.checked)}
+                icon="👥"
+                title="Convidar atendentes"
+                desc="Convida membros da equipe por e-mail para acessar a plataforma"
+                ai={ai.has('member_emails')}
+              >
+                <textarea
+                  value={form.member_emails_raw}
+                  onChange={e => setField('member_emails_raw', e.target.value)}
+                  placeholder={'Um e-mail por linha ou separados por vírgula\nEx: joao@empresa.com, maria@empresa.com'}
+                  rows={3}
+                  style={{
+                    width: '100%', boxSizing: 'border-box', resize: 'vertical',
+                    background: '#0f1114', border: '1px solid #2a2d32', borderRadius: 6,
+                    padding: '8px 10px', color: '#FFFFFF', fontSize: 13, outline: 'none',
+                    fontFamily: 'inherit', lineHeight: 1.5,
+                  }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#4C70DA' }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#2a2d32' }}
+                />
+              </ToggleSection>
             </div>
           )}
 
@@ -615,6 +644,7 @@ export default function StepperForm({ initialForm, onSubmit, onBack, aiFilledFie
                 <ReviewRow label="Etiquetas"  value={labelSummary} />
                 <ReviewRow label="Chatbot"    value={chatbotSummary} />
                 <ReviewRow label="Canal"      value={form.create_channel ? (form.channel_name || 'Sim') : 'Não'} />
+                <ReviewRow label="Atendentes" value={form.invite_members ? (form.member_emails_raw.trim() || 'Sim') : 'Não'} />
               </div>
               <div style={{ background: 'rgba(76,112,218,0.07)', border: '1px solid rgba(76,112,218,0.2)', borderRadius: 10, padding: '14px 18px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 16, flexShrink: 0 }}>✨</span>
