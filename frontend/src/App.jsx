@@ -1086,6 +1086,48 @@ export default function App() {
               </div>
               <span style={{ fontSize: 26, filter: hoveredCard === 'surprise' ? 'none' : 'grayscale(1)', opacity: hoveredCard === 'surprise' ? 1 : 0.6, transition: 'all 0.2s' }}>✨</span>
             </div>
+
+            {/* Divisor */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
+              <div style={{ flex: 1, height: 1, background: '#2A2D32' }} />
+              <span style={{ fontSize: 12, color: '#555a65', whiteSpace: 'nowrap' }}>outras ferramentas</span>
+              <div style={{ flex: 1, height: 1, background: '#2A2D32' }} />
+            </div>
+
+            {/* Card Relatório */}
+            <div
+              onClick={() => {
+                const key = credentials.talk_api_key
+                const org = credentials.organization_id
+                const url = new URL('./report.html', window.location.href)
+                if (key) url.searchParams.set('api_key', key)
+                if (org) url.searchParams.set('org_id', org)
+                window.open(url.toString(), '_blank')
+              }}
+              onMouseEnter={() => setHoveredCard('report')}
+              onMouseLeave={() => setHoveredCard(null)}
+              style={{
+                padding: '20px 28px', borderRadius: 10,
+                background: hoveredCard === 'report' ? 'rgba(34,197,94,0.04)' : '#1A1C20',
+                border: hoveredCard === 'report' ? '1px solid rgba(34,197,94,0.4)' : '1px solid #2A2D32',
+                cursor: 'pointer', transition: 'all 0.15s ease-out',
+                display: 'flex', alignItems: 'center', gap: 24,
+                boxShadow: hoveredCard === 'report' ? '0 4px 16px rgba(0,0,0,0.3)' : 'none'
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                  <h2 style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 17, margin: 0 }}>Relatório de Atendimento</h2>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
+                    Abre em nova aba
+                  </span>
+                </div>
+                <p style={{ color: '#8E92A4', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
+                  Métricas de conversas, ranking de agentes, heatmap de horários e insights gerados por IA.
+                </p>
+              </div>
+              <span style={{ fontSize: 24, filter: hoveredCard === 'report' ? 'none' : 'grayscale(1)', opacity: hoveredCard === 'report' ? 1 : 0.5, transition: 'all 0.2s' }}>📊</span>
+            </div>
           </div>
 
         </div>
